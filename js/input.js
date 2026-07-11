@@ -1,5 +1,4 @@
-// État global des touches
-const keys = { up: false, down: false, left: false, right: false };
+const keys = { up: false, down: false, left: false, right: false, nitro: false, decoy: false, enter: false };
 
 window.addEventListener('keydown', (e) => {
     let k = e.key.toLowerCase();
@@ -7,6 +6,9 @@ window.addEventListener('keydown', (e) => {
     if(k === 'arrowdown' || k === 's') keys.down = true;
     if(k === 'arrowleft' || k === 'q' || k === 'a') keys.left = true;
     if(k === 'arrowright' || k === 'd') keys.right = true;
+    if(e.key === ' ') { keys.nitro = true; e.preventDefault(); }
+    if(e.key === 'Shift') { keys.decoy = true; e.preventDefault(); }
+    if(e.key === 'Enter') { keys.enter = true; e.preventDefault(); }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -15,4 +17,7 @@ window.addEventListener('keyup', (e) => {
     if(k === 'arrowdown' || k === 's') keys.down = false;
     if(k === 'arrowleft' || k === 'q' || k === 'a') keys.left = false;
     if(k === 'arrowright' || k === 'd') keys.right = false;
+    if(e.key === ' ') keys.nitro = false;
+    if(e.key === 'Shift') keys.decoy = false;
+    if(e.key === 'Enter') keys.enter = false;
 });
