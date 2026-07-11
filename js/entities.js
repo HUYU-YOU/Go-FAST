@@ -2,13 +2,13 @@ class Car {
     constructor(x, y, w, h, color) {
         this.x = x; this.y = y; this.w = w; this.h = h; this.color = color;
         this.vx = 0; this.vy = 0; this.angle = 0; this.speed = 0;
-        this.maxSpeed = 10; this.acceleration = 0.2; this.friction = 0.95; this.turnSpeed = 0.05;
+        this.maxSpeed = 10; this.acceleration = 0.25; this.friction = 0.94; this.turnSpeed = 0.055;
     }
     update() { this.x += this.vx; this.y += this.vy; }
     draw(ctx, camX, camY) {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-        ctx.fillStyle = '#111'; ctx.fillRect(this.w/5, -this.h/2 + 2, this.w/4, this.h - 4);
+        ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
         ctx.restore();
     }
     getBounds() { return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h }; }
@@ -16,10 +16,11 @@ class Car {
 
 class Player extends Car {
     constructor(x, y, carType) {
-        let color = '#222'; let maxSpeed = 14; let maxHealth = 5; let fuelDrain = 0.05;
-        if (carType === 'ferrari') { color = '#ffcc00'; maxSpeed = 17; maxHealth = 3; fuelDrain = 0.12; } 
-        else if (carType === 'convertible') { color = '#ff66b2'; maxSpeed = 11; maxHealth = 7; fuelDrain = 0.02; } 
-        else { color = '#333333'; maxSpeed = 14; maxHealth = 5; fuelDrain = 0.06; }
+        // INCREMENTED SPEED BY +25% FOR DYNAMISM
+        let color = '#222'; let maxSpeed = 17.5; let maxHealth = 5; let fuelDrain = 0.04;
+        if (carType === 'ferrari') { color = '#ffcc00'; maxSpeed = 21.5; maxHealth = 3; fuelDrain = 0.09; } 
+        else if (carType === 'convertible') { color = '#ff66b2'; maxSpeed = 14.0; maxHealth = 7; fuelDrain = 0.015; } 
+        else { color = '#111111'; maxSpeed = 17.5; maxHealth = 5; fuelDrain = 0.045; }
 
         super(x, y, 42, 24, color);
         this.baseMaxSpeed = maxSpeed; this.health = maxHealth; this.maxHealth = maxHealth; this.fuelDrainRate = fuelDrain;
@@ -30,7 +31,7 @@ class Player extends Car {
         if(this.decoyCooldown > 0) this.decoyCooldown--;
         let currentMax = this.baseMaxSpeed;
         if(keysInput.nitro && this.nitro > 0 && this.fuel > 0) {
-            currentMax += 7; this.nitro -= 0.6; this.speed += this.acceleration * 2;
+            currentMax += 8; this.nitro -= 0.5; this.speed += this.acceleration * 1.8;
         } else {
             if (keysInput.up && this.fuel > 0) this.speed += this.acceleration;
             if (keysInput.down && this.fuel > 0) this.speed -= this.acceleration;
@@ -41,16 +42,16 @@ class Player extends Car {
             if (keysInput.left) this.angle -= this.turnSpeed * dir;
             if (keysInput.right) this.angle += this.turnSpeed * dir;
         }
-        this.vx = this.vx * 0.84 + Math.cos(this.angle) * this.speed * 0.16;
-        this.vy = this.vy * 0.84 + Math.sin(this.angle) * this.speed * 0.16;
+        this.vx = this.vx * 0.82 + Math.cos(this.angle) * this.speed * 0.18;
+        this.vy = this.vy * 0.82 + Math.sin(this.angle) * this.speed * 0.18;
         super.update();
     }
 }
 
 class Civilian extends Car {
     constructor(x, y) {
-        super(x, y, 40, 24, '#6e6e7a');
-        this.maxSpeed = 3 + Math.random() * 3; this.angle = Math.random() > 0.5 ? 0 : Math.PI;
+        super(x, y, 40, 24, '#555560');
+        this.maxSpeed = 4 + Math.random() * 3; this.angle = Math.random() > 0.5 ? 0 : Math.PI;
         this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed;
     }
 }
@@ -58,22 +59,25 @@ class Civilian extends Car {
 class Police extends Car {
     constructor(x, y, type) {
         super(x, y, 40, 24, 'blue'); this.type = type; this.spinTimer = 0;
-        if (type === 1) { this.maxSpeed = 13.5; this.acceleration = 0.25; } 
-        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 9.5; this.acceleration = 0.15; } 
-        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 5.5; this.acceleration = 0.06; }
+        // NERFED POLICE AI STATS FOR BALANCED GAMEPLAY
+        if (type === 1) { this.maxSpeed = 14.5; this.acceleration = 0.16; this.turnSpeed = 0.038; } 
+        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 10.5; this.acceleration = 0.11; this.turnSpeed = 0.028; } 
+        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 6.5; this.acceleration = 0.04; this.turnSpeed = 0.018; }
     }
     updateAI(playerObj) {
         if(this.spinTimer > 0) { this.spinTimer--; this.angle += 0.2; this.vx *= 0.92; this.vy *= 0.92; this.x += this.vx; this.y += this.vy; return; }
         let targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
         let diff = targetAngle - this.angle;
         while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
-        this.angle += Math.sign(diff) * Math.min(Math.abs(diff), 0.05);
+        
+        // Softened turn rate
+        this.angle += Math.sign(diff) * Math.min(Math.abs(diff), this.turnSpeed);
         this.speed += this.acceleration; if(this.speed > this.maxSpeed) this.speed = this.maxSpeed;
         this.vx = Math.cos(this.angle) * this.speed; this.vy = Math.sin(this.angle) * this.speed;
         super.update();
     }
     draw(ctx, camX, camY) {
-        this.color = Math.floor(Date.now() / 120) % 2 === 0 ? (this.type === 3 ? '#1e4620' : '#ff1a1a') : (this.type === 3 ? '#0d260f' : '#1a1aff');
+        this.color = Math.floor(Date.now() / 150) % 2 === 0 ? (this.type === 3 ? '#1e4620' : '#d91e1e') : (this.type === 3 ? '#0d260f' : '#1e3ee6');
         super.draw(ctx, camX, camY);
     }
 }
