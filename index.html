@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>GoFast - Arcade 2D</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        <div id="ui">
+            <h2 id="title">GO-FAST</h2>
+            <p id="health">Dégâts : 0/5</p>
+            <p id="wanted">Ville : 1 | Wanted : ★</p>
+            <p id="keys">Clé : Non</p>
+            <p id="arrest-warning" style="color:red; font-weight:bold; display:none;">ARRESTATION EN COURS !</p>
+        </div>
+        <div id="message-screen">
+            <h1 id="msg-title"></h1>
+            <p id="msg-sub"></p>
+            <button onclick="location.reload()">Rejouer</button>
+        </div>
+    </div>
+
+    <!-- Scripts chargés dans l'ordre de dépendance -->
+    <script src="js/input.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/entities.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
