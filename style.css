@@ -1,0 +1,56 @@
+body {
+    margin: 0;
+    background-color: #111;
+    color: white;
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#game-container {
+    position: relative;
+    width: 1000px;
+    height: 600px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+canvas {
+    display: block;
+    background-color: #333;
+}
+
+#ui {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    pointer-events: none;
+}
+
+#ui h2 { margin: 0 0 10px 0; color: #00aaff; }
+#ui p { margin: 5px 0; font-size: 16px; }
+
+#message-screen {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+#message-screen h1 { font-size: 50px; margin-bottom: 10px; }
+#message-screen button {
+    padding: 10px 20px; font-size: 20px;
+    background: #00aaff; color: white; border: none;
+    cursor: pointer; border-radius: 5px; margin-top: 20px;
+}
+#message-screen button:hover { background: #0088cc; }
