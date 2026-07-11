@@ -8,7 +8,7 @@ let audioEnabled = true;
 let audioInitialized = false;
 
 const menuMusic = new Audio('audio/menu.mp3');
-menuMusic.loop = true;
+menuMusic.loop = true; // Tourne en boucle
 
 const radioStations = [
     { name: "agressi.fm", audio: new Audio('audio/agressi.fm.mp3') },
@@ -17,8 +17,73 @@ const radioStations = [
     { name: "TahLaBrazil.ontadit", audio: new Audio('audio/TahLaBrazil.ontadit.mp3') },
     { name: "Slowwly.radio", audio: new Audio('audio/Slowwly.radio.mp3') },
     { name: "OldSchoolFM", audio: new Audio('audio/OldSchoolFM.mp3') },
-    { name: "NightCarCrash", audio: new Audio('audio/NightCarCrash.mp3') }
+    { name: "NightCarCrash", audio: new Audio('audio/NightCarCrash.mp3') },
+    { name: "MAMACITA.fm", audio: new Audio('audio/MAMACITA.fm.mp3') },
+    { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
+    { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') }
 ];
+
+let currentRadioIndex = 0;
+let radioCooldown = 0; 
+
+// Initialise l'audio au premier clic
+window.addEventListener('click', () => {
+    if(!audioInitialized && audioEnabled) {
+        audioInitialized = true;
+        menuMusic.play().catch(e => console.log("Audio prevented:", e));
+    }
+});
+
+function toggleAudio() {
+    audioEnabled = !audioEnabled;
+    document.getElementById('audio-status').innerText = audioEnabled ? 'ON' : 'OFF';
+    if(!audioEnabled) {
+        menuMusic.pause();
+        radioStations.forEach(r => r.audio.volume = 0);
+    } else if (audioInitialized) {
+        if(gameState === 'menu' || gameState === 'car-select' || gameState === 'options') {
+            menuMusic.play();
+        } else if (gameState === 'playing') {
+            radioStations[currentRadioIndex].audio.volume = 1;
+        }
+    }
+}
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+    document.getElementById('ui').style.display = 'none';
+    document.getElementById('radio-hud').style.display = 'none'; // Cache le HUD radio
+    if(id) document.getElementById(id).style.display = 'flex';
+}
+
+function startGame(carType) {
+    map = new GameMap();
+    player = new Player(200, map.height / 2, carType);
+    civilians = []; police = [];
+    camera = { x: 0, y: 0 };
+    invulnerabilityTimer = 0;
+    gameState = 'playing';
+    
+    showScreen(null); 
+    document.getElementById('ui').style.display = 'block';
+
+    // Transition Musique Menu -> Radios en direct
+    if(audioEnabled && audioInitialized) {
+        menuMusic.pause();
+        // Lancement de TOUTES les radios en simultané, mutées et en boucle
+        radioStations.forEach(r => {
+            r.audio.loop = true; // Sécurité : force la boucle indéfinie
+            r.audio.volume = 0; 
+            r.audio.play().catch(e => console.log("Audio block:", e));
+        });
+        // On active le volume uniquement pour la radio actuelle
+        radioStations[currentRadioIndex].audio.volume = 1;
+        
+        // Affiche le HUD en haut de l'écran
+        document.getElementById('radio-hud').style.display = 'block';
+        document.getElementById('radio-hud').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
+    }
+}
 
 let currentRadioIndex = 0;
 let radioCooldown = 0; // Prevent spamming ENTER key
@@ -215,6 +280,19 @@ function draw() {
             document.getElementById('msg-title').style.color = "#00ff66";
             document.getElementById('msg-sub').innerText = "You made it across the border.";
         }
+    }
+    // Radio Swap Logic dans la fonction update()
+    if(keys.enter && radioCooldown <= 0) {
+        radioCooldown = 20;
+        if(audioEnabled) {
+            radioStations[currentRadioIndex].audio.volume = 0; // Mute
+            currentRadioIndex = (currentRadioIndex + 1) % radioStations.length;
+            radioStations[currentRadioIndex].audio.volume = 1; // Unmute
+        } else {
+            currentRadioIndex = (currentRadioIndex + 1) % radioStations.length;
+        }
+        // Mise à jour du nouveau HUD en haut
+        document.getElementById('radio-hud').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
     }
 
     requestAnimationFrame(draw);
