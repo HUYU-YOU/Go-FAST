@@ -2,13 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GoFast - International Edition</title>
+    <title>GoFast - Overdrive</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
         
+        <!-- TOP HUD (RADIO & WANTED) -->
+        <div id="top-hud">
+            <div id="radio-wrapper">
+                <span id="radio-display">📻 RADIO: OFF [ENTER]</span>
+                <button class="audio-btn" onclick="adjustVolume(-0.1)">-</button>
+                <button id="mute-btn" class="audio-btn" onclick="toggleMute()">🔊</button>
+                <button class="audio-btn" onclick="adjustVolume(0.1)">+</button>
+            </div>
+            <div id="wanted-display">WANTED: </div>
+        </div>
+
+        <!-- NEW BOTTOM HUD (CLEAN DRIVING STATS) -->
+        <div id="bottom-hud">
+            <span id="health">HULL: 5/5</span>
+            <span id="fuel">FUEL: 100%</span>
+            <span id="nitro">NITRO: 0% [SPACE]</span>
+            <span id="cargo">CARGO: 100% [SHIFT]</span>
+            <span id="objective">Objective: Find the Golden Key</span>
+        </div>
+
         <!-- MAIN MENU -->
         <div id="main-menu" class="screen">
             <h1>GO-FAST</h1>
@@ -20,16 +40,24 @@
         <!-- OPTIONS SCREEN -->
         <div id="options" class="screen" style="display: none;">
             <h1>OPTIONS</h1>
-            <p><strong>CONTROLS:</strong></p>
-            <p>Arrows / WASD / ZQSD : Drive</p>
-            <p>SPACE : Nitro | SHIFT : Drop Cargo Decoy</p>
-            <p>ENTER : Switch Radio Station</p>
+            <p><strong>CONTROLS:</strong> WASD/ZQSD/Arrows to Drive | SPACE: Nitro | SHIFT: Decoy | ESC: Pause</p>
             <br>
-            <p><strong>AUDIO:</strong> <span id="audio-status" style="color:#00ffcc; cursor:pointer;" onclick="toggleAudio()">ON</span></p>
-            <button onclick="showScreen('main-menu')">BACK</button>
+            <div class="volume-slider-wrapper">
+                <label>GLOBAL VOLUME: </label>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
+                <span id="volume-text">50%</span>
+            </div>
+            <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
         </div>
 
-        <!-- CAR SELECTION SCREEN -->
+        <!-- PAUSE SCREEN -->
+        <div id="pause-screen" class="screen" style="display: none; background: rgba(0,0,0,0.75);">
+            <h1>PAUSED</h1>
+            <button onclick="resumeGame()">RESUME</button>
+            <button onclick="location.reload()">QUIT</button>
+        </div>
+
+        <!-- CAR SELECTION -->
         <div id="car-select" class="screen" style="display: none;">
             <h2>SELECT YOUR RIDE</h2>
             <div class="car-roster">
@@ -37,48 +65,33 @@
                     <h3 style="color:#ffcc00;">YELLOW FERRARI</h3>
                     <p>Speed: ██████████</p>
                     <p>Endurance: ██░░░░░░░░</p>
-                    <p>Hull (HP): ███░░░░░░░ (3)</p>
+                    <p>Hull: 3 HP</p>
                 </div>
                 <div class="car-card" onclick="startGame('gti')">
-                    <h3 style="color:#444;">MATTE BLACK GTI</h3>
+                    <h3 style="color:#888;">MATTE BLACK GTI</h3>
                     <p>Speed: ███████░░░</p>
                     <p>Endurance: ███████░░░</p>
-                    <p>Hull (HP): █████░░░░░ (5)</p>
+                    <p>Hull: 5 HP</p>
                 </div>
                 <div class="car-card" onclick="startGame('convertible')">
                     <h3 style="color:#ff66b2;">PINK CONVERTIBLE</h3>
                     <p>Speed: ████░░░░░░</p>
                     <p>Endurance: ██████████</p>
-                    <p>Hull (HP): ███████░░░ (7)</p>
+                    <p>Hull: 7 HP</p>
                 </div>
             </div>
             <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
         </div>
 
-        <!-- IN-GAME UI -->
-        <div id="ui" style="display: none;">
-            <h2 id="title">GO-FAST</h2>
-            <p id="health">Hull Integrity: 5/5</p>
-            <p id="fuel" style="color: #ff5500;">Fuel: 100%</p>
-            <p id="nitro" style="color: #00ffcc;">Nitro: 0% [SPACE]</p>
-            <p id="cargo" style="color: #ffbb00;">Cargo: 100% [SHIFT]</p>
-            <p id="radio-display" style="color: #cc66ff;">Radio: OFF [ENTER]</p>
-            <p id="wanted">City: 1 | Wanted: ★</p>
-            <p id="keys">Objective: Find the Golden Key</p>
-            <p id="arrest-warning" style="color:red; font-weight:bold; display:none; animation: blink 0.5s infinite;">BUSTED IMMINENT!</p>
-        </div>
-
-        <!-- GAME OVER / WIN SCREEN -->
+        <!-- SCREEN MESSAGES -->
         <div id="message-screen" class="screen" style="display: none;">
             <h1 id="msg-title"></h1>
             <p id="msg-sub"></p>
             <button onclick="location.reload()">MAIN MENU</button>
         </div>
+        
+        <div id="arrest-warning" style="display:none;">BUST IMMINENT!</div>
     </div>
-
-        <div id="radio-hud" style="position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 15, 0.9); padding: 10px 30px; border: 2px solid #cc66ff; border-radius: 8px; color: #cc66ff; font-weight: bold; font-size: 18px; text-align: center; display: none; z-index: 100; box-shadow: 0 0 15px rgba(204, 102, 255, 0.4);">
-            📻 RADIO: OFF [ENTER]
-        </div>
 
     <script src="js/input.js"></script>
     <script src="js/map.js"></script>
