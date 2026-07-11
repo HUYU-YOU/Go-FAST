@@ -1,34 +1,82 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GoFast - Arcade 2D</title>
+    <title>GoFast - International Edition</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
-        <div id="ui">
-            <h2 id="title">GO-FAST</h2>
-            <p id="health">Dégâts : 0/5</p>
-            <p id="wanted">Ville : 1 | Wanted : ★</p>
-            <p id="keys">Clé : Non</p>
-            <p id="arrest-warning" style="color:red; font-weight:bold; display:none;">ARRESTATION EN COURS !</p>
+        
+        <!-- MAIN MENU -->
+        <div id="main-menu" class="screen">
+            <h1>GO-FAST</h1>
+            <p style="color:#aaa; margin-bottom: 20px;">Click anywhere to enable audio</p>
+            <button onclick="showScreen('car-select')">PLAY</button>
+            <button onclick="showScreen('options')">OPTIONS</button>
         </div>
-        <div id="message-screen">
+
+        <!-- OPTIONS SCREEN -->
+        <div id="options" class="screen" style="display: none;">
+            <h1>OPTIONS</h1>
+            <p><strong>CONTROLS:</strong></p>
+            <p>Arrows / WASD / ZQSD : Drive</p>
+            <p>SPACE : Nitro | SHIFT : Drop Cargo Decoy</p>
+            <p>ENTER : Switch Radio Station</p>
+            <br>
+            <p><strong>AUDIO:</strong> <span id="audio-status" style="color:#00ffcc; cursor:pointer;" onclick="toggleAudio()">ON</span></p>
+            <button onclick="showScreen('main-menu')">BACK</button>
+        </div>
+
+        <!-- CAR SELECTION SCREEN -->
+        <div id="car-select" class="screen" style="display: none;">
+            <h2>SELECT YOUR RIDE</h2>
+            <div class="car-roster">
+                <div class="car-card" onclick="startGame('ferrari')">
+                    <h3 style="color:#ffcc00;">YELLOW FERRARI</h3>
+                    <p>Speed: ██████████</p>
+                    <p>Endurance: ██░░░░░░░░</p>
+                    <p>Hull (HP): ███░░░░░░░ (3)</p>
+                </div>
+                <div class="car-card" onclick="startGame('gti')">
+                    <h3 style="color:#444;">MATTE BLACK GTI</h3>
+                    <p>Speed: ███████░░░</p>
+                    <p>Endurance: ███████░░░</p>
+                    <p>Hull (HP): █████░░░░░ (5)</p>
+                </div>
+                <div class="car-card" onclick="startGame('convertible')">
+                    <h3 style="color:#ff66b2;">PINK CONVERTIBLE</h3>
+                    <p>Speed: ████░░░░░░</p>
+                    <p>Endurance: ██████████</p>
+                    <p>Hull (HP): ███████░░░ (7)</p>
+                </div>
+            </div>
+            <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
+        </div>
+
+        <!-- IN-GAME UI -->
+        <div id="ui" style="display: none;">
+            <h2 id="title">GO-FAST</h2>
+            <p id="health">Hull Integrity: 5/5</p>
+            <p id="fuel" style="color: #ff5500;">Fuel: 100%</p>
+            <p id="nitro" style="color: #00ffcc;">Nitro: 0% [SPACE]</p>
+            <p id="cargo" style="color: #ffbb00;">Cargo: 100% [SHIFT]</p>
+            <p id="radio-display" style="color: #cc66ff;">Radio: OFF [ENTER]</p>
+            <p id="wanted">City: 1 | Wanted: ★</p>
+            <p id="keys">Objective: Find the Golden Key</p>
+            <p id="arrest-warning" style="color:red; font-weight:bold; display:none; animation: blink 0.5s infinite;">BUSTED IMMINENT!</p>
+        </div>
+
+        <!-- GAME OVER / WIN SCREEN -->
+        <div id="message-screen" class="screen" style="display: none;">
             <h1 id="msg-title"></h1>
             <p id="msg-sub"></p>
-            <button onclick="location.reload()">Rejouer</button>
+            <button onclick="location.reload()">MAIN MENU</button>
         </div>
     </div>
-<div id="ui">
-    <h2 id="title">GO-FAST</h2>
-    <p id="health">Dégâts : 0/5</p>
-    <p id="fuel" style="color: #ff5500; font-weight: bold;">FUEL : 100%</p> <p id="wanted">Ville : 1 | Wanted : ★</p>
-    <p id="keys">Clé : Non</p>
-    <p id="arrest-warning" style="color:red; font-weight:bold; display:none;">ARRESTATION EN COURS !</p>
-</div>
-    <!-- Scripts chargés dans l'ordre de dépendance -->
+
+    <!-- Scripts -->
     <script src="js/input.js"></script>
     <script src="js/map.js"></script>
     <script src="js/entities.js"></script>
