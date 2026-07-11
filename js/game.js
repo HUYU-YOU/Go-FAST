@@ -85,64 +85,6 @@ function startGame(carType) {
     }
 }
 
-let currentRadioIndex = 0;
-let radioCooldown = 0; // Prevent spamming ENTER key
-
-// Initialize audio on first user interaction
-window.addEventListener('click', () => {
-    if(!audioInitialized && audioEnabled) {
-        audioInitialized = true;
-        menuMusic.play().catch(e => console.log("Audio play prevented:", e));
-    }
-});
-
-function toggleAudio() {
-    audioEnabled = !audioEnabled;
-    document.getElementById('audio-status').innerText = audioEnabled ? 'ON' : 'OFF';
-    if(!audioEnabled) {
-        menuMusic.pause();
-        radioStations.forEach(r => r.audio.volume = 0);
-    } else if (audioInitialized) {
-        if(gameState === 'menu' || gameState === 'car-select' || gameState === 'options') {
-            menuMusic.play();
-        } else if (gameState === 'playing') {
-            radioStations[currentRadioIndex].audio.volume = 1;
-        }
-    }
-}
-
-function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-    document.getElementById('ui').style.display = 'none';
-    if(id) document.getElementById(id).style.display = 'flex';
-}
-
-function startGame(carType) {
-    map = new GameMap();
-    player = new Player(200, map.height / 2, carType);
-    civilians = []; police = [];
-    camera = { x: 0, y: 0 };
-    invulnerabilityTimer = 0;
-    gameState = 'playing';
-    
-    showScreen(null); 
-    document.getElementById('ui').style.display = 'block';
-
-    // Swap Audio from Menu to Radio Simulation
-    if(audioEnabled && audioInitialized) {
-        menuMusic.pause();
-        // Start all radios simultaneously but muted to simulate live broadcast
-        radioStations.forEach(r => {
-            r.audio.loop = true;
-            r.audio.volume = 0; 
-            r.audio.play().catch(e => console.log("Audio block:", e));
-        });
-        // Unmute the first station
-        radioStations[currentRadioIndex].audio.volume = 1;
-        document.getElementById('radio-display').innerText = `Radio: ${radioStations[currentRadioIndex].name} [ENTER]`;
-    }
-}
-
 function rectIntersect(r1, r2) {
     return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y);
 }
@@ -178,7 +120,8 @@ function update() {
         } else {
             currentRadioIndex = (currentRadioIndex + 1) % radioStations.length;
         }
-        document.getElementById('radio-display').innerText = `Radio: ${radioStations[currentRadioIndex].name} [ENTER]`;
+        // Mise à jour du nouveau HUD en haut
+        document.getElementById('radio-hud').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
     }
 
     // Fuel logic
@@ -280,19 +223,6 @@ function draw() {
             document.getElementById('msg-title').style.color = "#00ff66";
             document.getElementById('msg-sub').innerText = "You made it across the border.";
         }
-    }
-    // Radio Swap Logic dans la fonction update()
-    if(keys.enter && radioCooldown <= 0) {
-        radioCooldown = 20;
-        if(audioEnabled) {
-            radioStations[currentRadioIndex].audio.volume = 0; // Mute
-            currentRadioIndex = (currentRadioIndex + 1) % radioStations.length;
-            radioStations[currentRadioIndex].audio.volume = 1; // Unmute
-        } else {
-            currentRadioIndex = (currentRadioIndex + 1) % radioStations.length;
-        }
-        // Mise à jour du nouveau HUD en haut
-        document.getElementById('radio-hud').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
     }
 
     requestAnimationFrame(draw);
