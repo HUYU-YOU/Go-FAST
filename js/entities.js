@@ -30,7 +30,6 @@ class Player extends Car {
         if(this.decoyCooldown > 0) this.decoyCooldown--;
         let currentMax = this.baseMaxSpeed;
         
-        // Malus de vitesse si on roule sur l'herbe (Parc = type 4)
         if (currentTileType === 4) currentMax *= 0.5;
 
         if(keysInput.nitro && this.nitro > 0 && this.fuel > 0) {
@@ -49,8 +48,11 @@ class Player extends Car {
             if (keysInput.right) this.angle += this.turnSpeed * dir;
         }
         
-        this.vx = this.vx * 0.82 + Math.cos(this.angle) * this.speed * 0.18;
-        this.vy = this.vy * 0.82 + Math.sin(this.angle) * this.speed * 0.18;
+        // SYSTÈME DE DÉRAPAGE (Drift boosté)
+        let driftFactor = 0.88; // Plus c'est haut, plus la voiture glisse dans le virage
+        this.vx = this.vx * driftFactor + Math.cos(this.angle) * this.speed * (1 - driftFactor);
+        this.vy = this.vy * driftFactor + Math.sin(this.angle) * this.speed * (1 - driftFactor);
+        
         super.update();
     }
 }
@@ -59,7 +61,6 @@ class Civilian extends Car {
     constructor(x, y) {
         super(x, y, 40, 24, '#555560');
         this.maxSpeed = 4 + Math.random() * 3; 
-        // Civils roulent de manière orthogonale (Haut/Bas/Gauche/Droite pour suivre les routes)
         let dirs = [0, Math.PI/2, Math.PI, -Math.PI/2];
         this.angle = dirs[Math.floor(Math.random() * dirs.length)];
         this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed;
@@ -68,22 +69,63 @@ class Civilian extends Car {
 
 class Police extends Car {
     constructor(x, y, type) {
-        super(x, y, 40, 24, 'blue'); this.type = type; this.spinTimer = 0;
-        if (type === 1) { this.maxSpeed = 14.5; this.acceleration = 0.16; this.turnSpeed = 0.04; } 
-        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 10.5; this.acceleration = 0.11; this.turnSpeed = 0.03; } 
-        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 6.5; this.acceleration = 0.04; this.turnSpeed = 0.02; }
+        super(x, y, 40, 24, 'blue'); 
+        this.type = type; 
+        this.spinTimer = 0;
+        
+        // Policiers légèrement plus rapides pour mieux intercepter
+        if (type === 1) { this.maxSpeed = 15.5; this.acceleration = 0.2; this.turnSpeed = 0.045; } 
+        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 11.5; this.acceleration = 0.12; this.turnSpeed = 0.035; } 
+        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 7.0; this.acceleration = 0.05; this.turnSpeed = 0.025; }
     }
-    updateAI(playerObj) {
-        if(this.spinTimer > 0) { this.spinTimer--; this.angle += 0.2; this.vx *= 0.92; this.vy *= 0.92; this.x += this.vx; this.y += this.vy; return; }
-        let targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
+
+    // Le policier lit désormais la carte (mapObj) pour ne pas traverser l'eau ou les bâtiments
+    updateAI(playerObj, mapObj) {
+        if(this.spinTimer > 0) { 
+            this.spinTimer--; 
+            this.angle += 0.2; 
+            this.vx *= 0.92; this.vy *= 0.92; 
+            this.x += this.vx; this.y += this.vy; 
+            return; 
+        }
+
+        // Anticipation du terrain devant lui
+        let nextX = this.x + Math.cos(this.angle) * (this.speed * 3);
+        let nextY = this.y + Math.sin(this.angle) * (this.speed * 3);
+        let nextTile = mapObj.getTileTypeAt(nextX, nextY);
+
+        let targetAngle;
+        
+        // 0: Mur, 2: Eau -> Il faut esquiver !
+        if (nextTile === 0 || nextTile === 2) {
+            targetAngle = this.angle + (Math.PI / 1.5); // Virage sec d'esquive
+            this.speed *= 0.8;
+        } else {
+            // Pas d'obstacle, on pointe sur le joueur pour l'intercepter
+            targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
+        }
+
         let diff = targetAngle - this.angle;
-        while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
+        while(diff < -Math.PI) diff += Math.PI * 2; 
+        while(diff > Math.PI) diff -= Math.PI * 2;
         
         this.angle += Math.sign(diff) * Math.min(Math.abs(diff), this.turnSpeed);
-        this.speed += this.acceleration; if(this.speed > this.maxSpeed) this.speed = this.maxSpeed;
-        this.vx = Math.cos(this.angle) * this.speed; this.vy = Math.sin(this.angle) * this.speed;
+        this.speed += this.acceleration; 
+        if(this.speed > this.maxSpeed) this.speed = this.maxSpeed;
+        
+        this.vx = Math.cos(this.angle) * this.speed; 
+        this.vy = Math.sin(this.angle) * this.speed;
+        
+        // Application de la collision réelle (Bloqué s'il touche vraiment le mur ou l'eau)
+        let currentTileX = mapObj.getTileTypeAt(this.x + this.vx, this.y);
+        let currentTileY = mapObj.getTileTypeAt(this.x, this.y + this.vy);
+        
+        if (currentTileX === 0 || currentTileX === 2) { this.vx *= -0.5; this.speed *= 0.5; }
+        if (currentTileY === 0 || currentTileY === 2) { this.vy *= -0.5; this.speed *= 0.5; }
+
         super.update();
     }
+
     draw(ctx, camX, camY) {
         this.color = Math.floor(Date.now() / 150) % 2 === 0 ? (this.type === 3 ? '#1e4620' : '#d91e1e') : (this.type === 3 ? '#0d260f' : '#1e3ee6');
         super.draw(ctx, camX, camY);
