@@ -1,3 +1,26 @@
+// js/entities.js
+class Particle {
+    constructor(x, y, color) {
+        this.x = x; this.y = y;
+        this.vx = (Math.random() - 0.5) * 6;
+        this.vy = (Math.random() - 0.5) * 6;
+        this.life = 100;
+        this.color = color;
+        this.size = Math.random() * 4 + 2;
+    }
+    update() {
+        this.x += this.vx; this.y += this.vy;
+        this.vx *= 0.9; this.vy *= 0.9;
+        this.life--;
+    }
+    draw(ctx, camX, camY) {
+        ctx.globalAlpha = Math.max(0, this.life / 100);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x - camX, this.y - camY, this.size, this.size);
+        ctx.globalAlpha = 1;
+    }
+}
+
 class Car {
     constructor(x, y, w, h, color) {
         this.x = x; this.y = y; this.w = w; this.h = h; this.color = color;
@@ -30,7 +53,7 @@ class Player extends Car {
         if(this.decoyCooldown > 0) this.decoyCooldown--;
         let currentMax = this.baseMaxSpeed;
         
-        if (currentTileType === 4) currentMax *= 0.5;
+        if (currentTileType === 4) currentMax *= 0.5; // Ralenti dans les parcs
 
         if(keysInput.nitro && this.nitro > 0 && this.fuel > 0) {
             currentMax += 8; this.nitro -= 0.5; this.speed += this.acceleration * 1.8;
@@ -48,8 +71,7 @@ class Player extends Car {
             if (keysInput.right) this.angle += this.turnSpeed * dir;
         }
         
-        // SYSTÈME DE DÉRAPAGE (Drift boosté)
-        let driftFactor = 0.88; // Plus c'est haut, plus la voiture glisse dans le virage
+        let driftFactor = 0.88; 
         this.vx = this.vx * driftFactor + Math.cos(this.angle) * this.speed * (1 - driftFactor);
         this.vy = this.vy * driftFactor + Math.sin(this.angle) * this.speed * (1 - driftFactor);
         
@@ -73,35 +95,26 @@ class Police extends Car {
         this.type = type; 
         this.spinTimer = 0;
         
-        // Policiers légèrement plus rapides pour mieux intercepter
         if (type === 1) { this.maxSpeed = 15.5; this.acceleration = 0.2; this.turnSpeed = 0.045; } 
         else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 11.5; this.acceleration = 0.12; this.turnSpeed = 0.035; } 
         else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 7.0; this.acceleration = 0.05; this.turnSpeed = 0.025; }
     }
 
-    // Le policier lit désormais la carte (mapObj) pour ne pas traverser l'eau ou les bâtiments
     updateAI(playerObj, mapObj) {
         if(this.spinTimer > 0) { 
-            this.spinTimer--; 
-            this.angle += 0.2; 
-            this.vx *= 0.92; this.vy *= 0.92; 
-            this.x += this.vx; this.y += this.vy; 
-            return; 
+            this.spinTimer--; this.angle += 0.2; this.vx *= 0.92; this.vy *= 0.92; 
+            this.x += this.vx; this.y += this.vy; return; 
         }
 
-        // Anticipation du terrain devant lui
         let nextX = this.x + Math.cos(this.angle) * (this.speed * 3);
         let nextY = this.y + Math.sin(this.angle) * (this.speed * 3);
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
 
         let targetAngle;
-        
-        // 0: Mur, 2: Eau -> Il faut esquiver !
         if (nextTile === 0 || nextTile === 2) {
-            targetAngle = this.angle + (Math.PI / 1.5); // Virage sec d'esquive
+            targetAngle = this.angle + (Math.PI / 1.5); 
             this.speed *= 0.8;
         } else {
-            // Pas d'obstacle, on pointe sur le joueur pour l'intercepter
             targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
         }
 
@@ -116,7 +129,6 @@ class Police extends Car {
         this.vx = Math.cos(this.angle) * this.speed; 
         this.vy = Math.sin(this.angle) * this.speed;
         
-        // Application de la collision réelle (Bloqué s'il touche vraiment le mur ou l'eau)
         let currentTileX = mapObj.getTileTypeAt(this.x + this.vx, this.y);
         let currentTileY = mapObj.getTileTypeAt(this.x, this.y + this.vy);
         
@@ -129,5 +141,38 @@ class Police extends Car {
     draw(ctx, camX, camY) {
         this.color = Math.floor(Date.now() / 150) % 2 === 0 ? (this.type === 3 ? '#1e4620' : '#d91e1e') : (this.type === 3 ? '#0d260f' : '#1e3ee6');
         super.draw(ctx, camX, camY);
+    }
+}
+
+class Pedestrian {
+    constructor(x, y) {
+        this.x = x; this.y = y; this.w = 12; this.h = 12;
+        this.vx = (Math.random() - 0.5);
+        this.vy = (Math.random() - 0.5);
+        this.alive = true;
+    }
+    update(mapObj) {
+        if(!this.alive) return;
+        
+        let nextX = this.x + this.vx;
+        let nextY = this.y + this.vy;
+        
+        // PNJ restent majoritairement sur les trottoirs (0) et parcs (4)
+        if(mapObj.getTileTypeAt(nextX, nextY) === 1 || mapObj.getTileTypeAt(nextX, nextY) === 2) {
+            this.vx *= -1; this.vy *= -1; // Demi-tour si route ou eau
+        } else {
+            this.x += this.vx; this.y += this.vy;
+        }
+
+        if(Math.random() < 0.01) {
+            this.vx = (Math.random() - 0.5); this.vy = (Math.random() - 0.5);
+        }
+    }
+    draw(ctx, camX, camY) {
+        if(!this.alive) return;
+        ctx.fillStyle = '#ffcc99'; // Peau
+        ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, this.w/2, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#3366cc'; // T-shirt
+        ctx.fillRect(this.x - camX - 4, this.y - camY - 2, 8, 8);
     }
 }
