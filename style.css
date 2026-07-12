@@ -9,8 +9,6 @@ body {
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.8); border: 2px solid #222;
 }
 canvas { display: block; background-color: #1a1a20; }
-
-/* NEW ERGONOMIC HUDs */
 #top-hud {
     position: absolute; top: 0; left: 0; width: 100%;
     display: flex; justify-content: space-between; align-items: center;
@@ -29,13 +27,11 @@ canvas { display: block; background-color: #1a1a20; }
     cursor: pointer; padding: 2px 8px; border-radius: 3px; font-family: inherit;
 }
 .audio-btn:hover { background: #b34dd2; }
-
 #wanted-display {
     position: absolute; right: 25px; color: #ff3333;
     font-size: 22px; font-weight: bold; letter-spacing: 2px;
     text-shadow: 0 0 8px rgba(255,51,51,0.6);
 }
-
 #bottom-hud {
     position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
     width: 90%; background: rgba(10, 10, 15, 0.85); border: 1px solid #444;
@@ -47,8 +43,6 @@ canvas { display: block; background-color: #1a1a20; }
 #bottom-hud #nitro { color: #00e5ff; }
 #bottom-hud #cargo { color: #ffbb00; }
 #bottom-hud #objective { color: #fff; }
-
-/* SCREENS */
 .screen {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(10, 10, 15, 0.96); display: flex; flex-direction: column;
@@ -61,7 +55,6 @@ canvas { display: block; background-color: #1a1a20; }
     margin: 8px; font-family: inherit; transition: 0.15s;
 }
 .screen button:hover { background: #00ccaa; transform: scale(1.04); }
-
 .car-roster { display: flex; gap: 20px; }
 .car-card {
     background: #151520; border: 2px solid #333; padding: 20px; border-radius: 8px;
@@ -70,7 +63,6 @@ canvas { display: block; background-color: #1a1a20; }
 .car-card:hover { border-color: #00ffcc; transform: translateY(-5px); }
 .car-card h3 { margin: 0 0 10px 0; font-size: 15px; text-align: center; }
 .car-card p { font-size: 12px; margin: 6px 0; color: #bbb; }
-
 #arrest-warning {
     position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
     color: red; font-size: 40px; font-weight: bold; animation: blink 0.4s infinite; z-index: 4;
