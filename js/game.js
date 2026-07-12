@@ -48,7 +48,6 @@ function resumeGame() { gameState = 'playing'; showScreen(null); document.getEle
 
 function startGame(carType) {
     map = new CityMap(); 
-    // Faire spawner le joueur sur une route (Type 1)
     let px = 0, py = 0;
     while(map.getTileTypeAt(px, py) !== 1) { px = Math.random() * map.width; py = Math.random() * map.height; }
     player = new Player(px, py, carType);
@@ -66,7 +65,7 @@ function rectIntersect(r1, r2) { return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1
 function spawnEntities() {
     if(civilians.length < 25) {
         let cx = player.x + (Math.random() > 0.5 ? 800 : -800); let cy = player.y + (Math.random() > 0.5 ? 600 : -600);
-        if(map.getTileTypeAt(cx, cy) === 1) civilians.push(new Civilian(cx, cy)); // Spawn uniquement sur route
+        if(map.getTileTypeAt(cx, cy) === 1) civilians.push(new Civilian(cx, cy)); 
     }
     if(police.length < 4 + player.keysCollected * 2) {
         let px = player.x + (Math.random() > 0.5 ? 900 : -900); let py = player.y + (Math.random() > 0.5 ? 700 : -700);
@@ -94,18 +93,15 @@ function update() {
 
     let currentTile = map.getTileTypeAt(player.x, player.y);
     player.updatePlayer(keys, currentTile); spawnEntities();
-    for(let c of civilians) c.update(); for(let p of police) p.updateAI(player);
+    
+    for(let c of civilians) c.update(); 
+    for(let p of police) p.updateAI(player, map); // <-- L'IA REÇOIT LA MAP ICI
 
     civilians = civilians.filter(c => Math.abs(c.x - player.x) < 1800 && Math.abs(c.y - player.y) < 1800);
     police = police.filter(p => Math.abs(p.x - player.x) < 1800 && Math.abs(p.y - player.y) < 1800);
 
-    // --- COLLISIONS AVEC LA MAP ---
-    // 1. Noyade (Eau = Type 2)
-    if (currentTile === 2) {
-        gameState = 'gameover_drown'; return;
-    }
+    if (currentTile === 2) { gameState = 'gameover_drown'; return; }
     
-    // 2. Murs et Bâtiments (Type 0)
     let nextTileX = map.getTileTypeAt(player.x + player.vx * 2, player.y);
     let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 2);
     if(nextTileX === 0) { player.vx *= -0.5; player.speed *= 0.5; }
@@ -136,7 +132,6 @@ function update() {
 
     if(player.keysCollected >= 5) gameState = 'win';
 
-    // Caméra centrée sur le joueur (style monde ouvert 360°)
     camera.x = player.x - canvas.width / 2; 
     camera.y = player.y - canvas.height / 2;
 
