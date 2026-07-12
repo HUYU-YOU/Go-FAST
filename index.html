@@ -2,14 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GoFast - Overdrive</title>
+    <title>GoFast - Liberty City Edition</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
         
-        <!-- TOP HUD (RADIO & WANTED) -->
         <div id="top-hud">
             <div id="radio-wrapper">
                 <span id="radio-display">📻 RADIO: OFF [ENTER]</span>
@@ -20,16 +19,14 @@
             <div id="wanted-display">WANTED: </div>
         </div>
 
-        <!-- NEW BOTTOM HUD (CLEAN DRIVING STATS) -->
         <div id="bottom-hud">
             <span id="health">HULL: 5/5</span>
             <span id="fuel">FUEL: 100%</span>
             <span id="nitro">NITRO: 0% [SPACE]</span>
             <span id="cargo">CARGO: 100% [SHIFT]</span>
-            <span id="objective">Objective: Find the Golden Key</span>
+            <span id="objective">Obj: Find the Key</span>
         </div>
 
-        <!-- MAIN MENU -->
         <div id="main-menu" class="screen">
             <h1>GO-FAST</h1>
             <p style="color:#aaa; margin-bottom: 20px;">Click anywhere to enable audio</p>
@@ -37,7 +34,6 @@
             <button onclick="showScreen('options')">OPTIONS</button>
         </div>
 
-        <!-- OPTIONS SCREEN -->
         <div id="options" class="screen" style="display: none;">
             <h1>OPTIONS</h1>
             <p><strong>CONTROLS:</strong> WASD/ZQSD/Arrows to Drive | SPACE: Nitro | SHIFT: Decoy | ESC: Pause</p>
@@ -50,14 +46,12 @@
             <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
         </div>
 
-        <!-- PAUSE SCREEN -->
         <div id="pause-screen" class="screen" style="display: none; background: rgba(0,0,0,0.75);">
             <h1>PAUSED</h1>
             <button onclick="resumeGame()">RESUME</button>
             <button onclick="location.reload()">QUIT</button>
         </div>
 
-        <!-- CAR SELECTION -->
         <div id="car-select" class="screen" style="display: none;">
             <h2>SELECT YOUR RIDE</h2>
             <div class="car-roster">
@@ -83,7 +77,6 @@
             <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
         </div>
 
-        <!-- SCREEN MESSAGES -->
         <div id="message-screen" class="screen" style="display: none;">
             <h1 id="msg-title"></h1>
             <p id="msg-sub"></p>
