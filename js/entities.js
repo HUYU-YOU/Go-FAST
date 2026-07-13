@@ -167,6 +167,16 @@ class Police extends Car {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
+        
+        // Lumières clignotantes pour les Vans (type 2)
+        if (this.type === 2) {
+            let time = Date.now();
+            ctx.fillStyle = (time % 300 < 150) ? 'red' : '#1e3ee6';
+            ctx.fillRect(-8, -this.h/2 + 2, 6, 4);
+            ctx.fillStyle = (time % 300 < 150) ? '#1e3ee6' : 'red';
+            ctx.fillRect(2, -this.h/2 + 2, 6, 4);
+        }
+
         if(this.type === 3) { ctx.fillStyle = '#333'; ctx.fillRect(0, -4, 40, 8); }
         ctx.restore();
     }
