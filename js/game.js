@@ -16,7 +16,6 @@ const backgrounds = [
     'url("img/background7.png")',
     'url("img/background8.png")'
 ];
-// Sélectionne une image au hasard pour commencer
 let currentBgIndex = Math.floor(Math.random() * backgrounds.length);
 document.getElementById('bg-slider').style.backgroundImage = backgrounds[currentBgIndex];
 let bgInterval = null;
@@ -37,7 +36,7 @@ function stopBgSlider() {
     if(bgInterval) { clearInterval(bgInterval); bgInterval = null; }
 }
 
-// --- GESTION AUDIO (Bouton global) ---
+// --- GESTION AUDIO ---
 let globalVolume = 0.5, isMuted = false, audioInitialized = false, radioCooldown = 0, currentRadioIndex = 0;
 const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
@@ -85,10 +84,9 @@ function resumeGame() {
     document.getElementById('radio-wrapper').style.display = 'flex'; applyVolumeSettings();
 }
 
-// On lance le slider au tout début
 startBgSlider();
 
-// --- LOGIQUE DE CHARGEMENT DE ~6,5 SECONDES ---
+// --- LOGIQUE DE CHARGEMENT DE ~6.5 SECONDES ---
 function startGame(carType) {
     gameState = 'loading';
     showScreen('loading-screen');
@@ -100,7 +98,6 @@ function startGame(carType) {
     loadingText.innerText = '0%';
 
     let loadInterval = setInterval(() => {
-        // En moyenne +3% tous les 200ms -> environ 6.6 secondes
         progress += (Math.random() * 2 + 2); 
         if(progress >= 100) {
             progress = 100;
@@ -129,7 +126,6 @@ function finishStartGame(carType) {
     document.getElementById('bottom-hud').style.display = 'flex';
     document.getElementById('radio-wrapper').style.display = 'block';
     
-    // LANCE DIRECTEMENT LA RADIO
     currentRadioIndex = 0; 
     if(audioInitialized) {
         menuMusic.pause(); 
@@ -178,9 +174,7 @@ function spawnInstantCopNearPlayer() {
 }
 
 function drawMinimap() {
-    let mmSize = 160; let mmX = 20; let mmY = 20;
-    // On décale la minimap plus bas pour ne pas cacher les contrôles de son
-    mmY = 70;
+    let mmSize = 160; let mmX = 20; let mmY = 70; // Décalé pour ne pas gêner le son
     
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(mmX, mmY, mmSize, mmSize);
     ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 2; ctx.strokeRect(mmX, mmY, mmSize, mmSize);
@@ -196,12 +190,10 @@ function drawMinimap() {
     for(let y=0; y<map.rows; y++) {
         for(let x=0; x<map.cols; x++) {
             if(map.grid[y][x] === 2) drawDot(x * map.tileSize, y * map.tileSize, '#1a8cff', map.tileSize * scale);
-            // BANQUE = GRISE au lieu de jaune pour éviter la confusion avec les cargos
             if(map.grid[y][x] === 5) drawDot(x * map.tileSize, y * map.tileSize, '#cccccc', map.tileSize * scale); 
         }
     }
     for(let f of map.fuels) if(!f.collected) drawDot(f.x, f.y, '#ff5500', 4);
-    // CARGO (CLÉS) = SEUL TRUC JAUNE
     for(let k of map.keys) if(!k.collected) drawDot(k.x, k.y, '#ffd700', 6);
     
     for(let p of police) drawDot(p.x, p.y, 'red', 4);
