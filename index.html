@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GoFast - Liberty City Edition</title>
+    <title>GoFast - Overdrive</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -10,6 +10,9 @@
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
         
         <div id="top-hud">
+            <!-- Minimap Container -->
+            <div id="minimap-container"></div>
+            
             <div id="radio-wrapper">
                 <span id="radio-display">📻 RADIO: OFF [ENTER]</span>
                 <button class="audio-btn" onclick="adjustVolume(-0.1)">-</button>
@@ -31,22 +34,9 @@
             <h1>GO-FAST</h1>
             <p style="color:#aaa; margin-bottom: 20px;">Click anywhere to enable audio</p>
             <button onclick="showScreen('car-select')">PLAY</button>
-            <button onclick="showScreen('options')">OPTIONS</button>
         </div>
 
-        <div id="options" class="screen" style="display: none;">
-            <h1>OPTIONS</h1>
-            <p><strong>CONTROLS:</strong> WASD/ZQSD/Arrows to Drive | SPACE: Nitro | SHIFT: Decoy | ESC: Pause</p>
-            <br>
-            <div class="volume-slider-wrapper">
-                <label>GLOBAL VOLUME: </label>
-                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
-                <span id="volume-text">50%</span>
-            </div>
-            <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
-        </div>
-
-        <div id="pause-screen" class="screen" style="display: none; background: rgba(0,0,0,0.75);">
+        <div id="pause-screen" class="screen" style="display: none; background: rgba(0,0,0,0.85);">
             <h1>PAUSED</h1>
             <button onclick="resumeGame()">RESUME</button>
             <button onclick="location.reload()">QUIT</button>
@@ -66,12 +56,6 @@
                     <p>Speed: ███████░░░</p>
                     <p>Endurance: ███████░░░</p>
                     <p>Hull: 5 HP</p>
-                </div>
-                <div class="car-card" onclick="startGame('convertible')">
-                    <h3 style="color:#ff66b2;">PINK CONVERTIBLE</h3>
-                    <p>Speed: ████░░░░░░</p>
-                    <p>Endurance: ██████████</p>
-                    <p>Hull: 7 HP</p>
                 </div>
             </div>
             <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
