@@ -1,3 +1,4 @@
+/* style.css */
 body {
     margin: 0; background-color: #050508; color: white;
     font-family: 'Courier New', Courier, monospace;
@@ -24,9 +25,10 @@ canvas { display: block; background-color: #1a1a20; }
     background: #cc66ff; border: none; color: black; font-weight: bold;
     cursor: pointer; padding: 2px 8px; border-radius: 3px;
 }
+#volume-slider { cursor: pointer; }
 #wanted-display {
     position: absolute; right: 25px; top: 15px; color: #ff3333;
-    font-size: 22px; font-weight: bold; letter-spacing: 2px;
+    font-size: 24px; font-weight: bold; letter-spacing: 2px;
 }
 #bottom-hud {
     position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
@@ -53,5 +55,9 @@ canvas { display: block; background-color: #1a1a20; }
 #arrest-warning {
     position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
     color: red; font-size: 40px; font-weight: bold; animation: blink 0.4s infinite; z-index: 4;
+}
+#heli-warning {
+    position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
+    color: #ffcc00; font-size: 20px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; z-index: 4;
 }
 @keyframes blink { 0% { opacity:0; } 50% { opacity:1; } 100% { opacity:0; } }
