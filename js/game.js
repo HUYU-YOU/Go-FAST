@@ -1,4 +1,3 @@
-// js/game.js
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -6,18 +5,20 @@ let map, player, civilians, police, helicopters, pedestrians, particles, bullets
 let gameState = 'menu', camera, invulnerabilityTimer;
 let escCooldown = 0;
 
-// --- GESTION BACKGROUND SLIDER ---
+// --- GESTION BACKGROUND SLIDER AVEC .PNG ---
 const backgrounds = [
-    'url("img/background1.jpg")',
-    'url("img/background2.jpg")',
-    'url("img/background3.jpg")',
-    'url("img/background4.jpg")',
-    'url("img/background5.jpg")',
-    'url("img/background6.jpg")',
-    'url("img/background7.jpg")',
-    'url("img/background8.jpg")'
+    'url("img/background1.png")',
+    'url("img/background2.png")',
+    'url("img/background3.png")',
+    'url("img/background4.png")',
+    'url("img/background5.png")',
+    'url("img/background6.png")',
+    'url("img/background7.png")',
+    'url("img/background8.png")'
 ];
-let currentBgIndex = 0;
+// Sélectionne une image au hasard pour commencer
+let currentBgIndex = Math.floor(Math.random() * backgrounds.length);
+document.getElementById('bg-slider').style.backgroundImage = backgrounds[currentBgIndex];
 let bgInterval = null;
 
 function startBgSlider() {
@@ -36,7 +37,7 @@ function stopBgSlider() {
     if(bgInterval) { clearInterval(bgInterval); bgInterval = null; }
 }
 
-// --- GESTION AUDIO ---
+// --- GESTION AUDIO (Bouton global) ---
 let globalVolume = 0.5, isMuted = false, audioInitialized = false, radioCooldown = 0, currentRadioIndex = 0;
 const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
@@ -51,8 +52,16 @@ window.addEventListener('click', () => {
         if(gameState === 'menu' || gameState === 'car-select') menuMusic.play().catch(e=>e);
     }
 });
-function changeGlobalVolume(val) { globalVolume = parseFloat(val); if(!isMuted) applyVolumeSettings(); }
-function toggleMute() { isMuted = !isMuted; document.getElementById('mute-btn').innerText = isMuted ? "❌" : "🔊"; applyVolumeSettings(); }
+function changeGlobalVolume(val) { 
+    globalVolume = parseFloat(val); 
+    document.getElementById('volume-slider').value = val;
+    if(!isMuted) applyVolumeSettings(); 
+}
+function toggleMute() { 
+    isMuted = !isMuted; 
+    document.getElementById('mute-btn').innerText = isMuted ? "❌" : "🔊"; 
+    applyVolumeSettings(); 
+}
 function applyVolumeSettings() {
     let targetVol = isMuted ? 0 : globalVolume; menuMusic.volume = targetVol;
     radioStations.forEach((r, idx) => { if(gameState === 'playing' && idx === currentRadioIndex) r.audio.volume = targetVol; else r.audio.volume = 0; });
@@ -64,7 +73,6 @@ function showScreen(id) {
     document.getElementById('radio-wrapper').style.display = 'none';
     if(id) document.getElementById(id).style.display = 'flex';
 
-    // Le slider reste actif pendant le chargement (loading-screen)
     if(id === 'main-menu' || id === 'car-select' || id === 'pause-screen' || id === 'message-screen' || id === 'loading-screen') {
         startBgSlider();
     } else if (id === null && gameState === 'playing') {
@@ -80,7 +88,7 @@ function resumeGame() {
 // On lance le slider au tout début
 startBgSlider();
 
-// --- LOGIQUE DE CHARGEMENT ---
+// --- LOGIQUE DE CHARGEMENT DE ~6,5 SECONDES ---
 function startGame(carType) {
     gameState = 'loading';
     showScreen('loading-screen');
@@ -91,25 +99,25 @@ function startGame(carType) {
     loadingBar.style.width = '0%';
     loadingText.innerText = '0%';
 
-    // Simule un temps de chargement
     let loadInterval = setInterval(() => {
-        progress += Math.floor(Math.random() * 15) + 5;
+        // En moyenne +3% tous les 200ms -> environ 6.6 secondes
+        progress += (Math.random() * 2 + 2); 
         if(progress >= 100) {
             progress = 100;
             clearInterval(loadInterval);
             setTimeout(() => {
                 finishStartGame(carType);
-            }, 600); // Petite pause à 100% avant de lancer
+            }, 600); 
         }
         loadingBar.style.width = progress + '%';
-        loadingText.innerText = progress + '%';
-    }, 250);
+        loadingText.innerText = Math.floor(progress) + '%';
+    }, 200);
 }
 
 function finishStartGame(carType) {
     map = new CityMap(); 
     let px = map.bankSpawn.x * map.tileSize; let py = map.bankSpawn.y * map.tileSize;
-    while(map.getTileTypeAt(px, py) !== 1) { px += map.tileSize; } // Move to road
+    while(map.getTileTypeAt(px, py) !== 1) { px += map.tileSize; } 
     
     player = new Player(px, py, carType);
     player.keysCollected = 0;
@@ -119,11 +127,15 @@ function finishStartGame(carType) {
     
     showScreen(null); 
     document.getElementById('bottom-hud').style.display = 'flex';
-    document.getElementById('radio-wrapper').style.display = 'flex';
+    document.getElementById('radio-wrapper').style.display = 'block';
     
+    // LANCE DIRECTEMENT LA RADIO
+    currentRadioIndex = 0; 
     if(audioInitialized) {
-        menuMusic.pause(); radioStations.forEach(r => { r.audio.loop = true; r.audio.volume = 0; r.audio.play().catch(e=>e); });
-        applyVolumeSettings(); document.getElementById('radio-display').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
+        menuMusic.pause(); 
+        radioStations.forEach(r => { r.audio.loop = true; r.audio.volume = 0; r.audio.play().catch(e=>e); });
+        applyVolumeSettings(); 
+        document.getElementById('radio-display').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
     }
 }
 
@@ -167,6 +179,9 @@ function spawnInstantCopNearPlayer() {
 
 function drawMinimap() {
     let mmSize = 160; let mmX = 20; let mmY = 20;
+    // On décale la minimap plus bas pour ne pas cacher les contrôles de son
+    mmY = 70;
+    
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(mmX, mmY, mmSize, mmSize);
     ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 2; ctx.strokeRect(mmX, mmY, mmSize, mmSize);
     let viewRadius = 4000; let scale = mmSize / (viewRadius * 2);
@@ -181,11 +196,14 @@ function drawMinimap() {
     for(let y=0; y<map.rows; y++) {
         for(let x=0; x<map.cols; x++) {
             if(map.grid[y][x] === 2) drawDot(x * map.tileSize, y * map.tileSize, '#1a8cff', map.tileSize * scale);
-            if(map.grid[y][x] === 5) drawDot(x * map.tileSize, y * map.tileSize, '#ffd700', map.tileSize * scale); 
+            // BANQUE = GRISE au lieu de jaune pour éviter la confusion avec les cargos
+            if(map.grid[y][x] === 5) drawDot(x * map.tileSize, y * map.tileSize, '#cccccc', map.tileSize * scale); 
         }
     }
     for(let f of map.fuels) if(!f.collected) drawDot(f.x, f.y, '#ff5500', 4);
+    // CARGO (CLÉS) = SEUL TRUC JAUNE
     for(let k of map.keys) if(!k.collected) drawDot(k.x, k.y, '#ffd700', 6);
+    
     for(let p of police) drawDot(p.x, p.y, 'red', 4);
     for(let h of helicopters) drawDot(h.x, h.y, 'magenta', 5);
 
