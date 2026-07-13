@@ -1,4 +1,3 @@
-// js/game.js
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -6,7 +5,37 @@ let map, player, civilians, police, helicopters, pedestrians, particles, bullets
 let gameState = 'menu', camera, invulnerabilityTimer;
 let escCooldown = 0;
 
-// AUDIO
+// --- GESTION BACKGROUND SLIDER ---
+const backgrounds = [
+    'url("img/background1.jpg")',
+    'url("img/background2.jpg")',
+    'url("img/background3.jpg")',
+    'url("img/background4.jpg")',
+    'url("img/background5.jpg")',
+    'url("img/background6.jpg")',
+    'url("img/background7.jpg")',
+    'url("img/background8.jpg")'
+];
+let currentBgIndex = 0;
+let bgInterval = null;
+
+function startBgSlider() {
+    const slider = document.getElementById('bg-slider');
+    slider.style.display = 'block';
+    if(!bgInterval) {
+        bgInterval = setInterval(() => {
+            currentBgIndex = (currentBgIndex + 1) % backgrounds.length;
+            slider.style.backgroundImage = backgrounds[currentBgIndex];
+        }, 4000);
+    }
+}
+
+function stopBgSlider() {
+    document.getElementById('bg-slider').style.display = 'none';
+    if(bgInterval) { clearInterval(bgInterval); bgInterval = null; }
+}
+
+// --- GESTION AUDIO ---
 let globalVolume = 0.5, isMuted = false, audioInitialized = false, radioCooldown = 0, currentRadioIndex = 0;
 const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
@@ -33,6 +62,12 @@ function showScreen(id) {
     document.getElementById('bottom-hud').style.display = 'none';
     document.getElementById('radio-wrapper').style.display = 'none';
     if(id) document.getElementById(id).style.display = 'flex';
+
+    if(id === 'main-menu' || id === 'car-select' || id === 'pause-screen' || id === 'message-screen') {
+        startBgSlider();
+    } else if (id === null && gameState === 'playing') {
+        stopBgSlider();
+    }
 }
 function resumeGame() { 
     gameState = 'playing'; showScreen(null); 
@@ -40,18 +75,16 @@ function resumeGame() {
     document.getElementById('radio-wrapper').style.display = 'flex'; applyVolumeSettings();
 }
 
+// On lance le slider au tout début
+startBgSlider();
+
 function startGame(carType) {
     map = new CityMap(); 
-    
-    // START AT A BANK
-    let px = map.bankSpawn.x * map.tileSize;
-    let py = map.bankSpawn.y * map.tileSize;
-    
-    // Push slightly out to road
-    while(map.getTileTypeAt(px, py) !== 1) { px += map.tileSize; }
+    let px = map.bankSpawn.x * map.tileSize; let py = map.bankSpawn.y * map.tileSize;
+    while(map.getTileTypeAt(px, py) !== 1) { px += map.tileSize; } // Move to road
     
     player = new Player(px, py, carType);
-    player.keysCollected = 0; // Starts at 0 keys, which means 1 Star.
+    player.keysCollected = 0;
     
     civilians = []; police = []; helicopters = []; pedestrians = []; particles = []; bullets = [];
     camera = { x: 0, y: 0 }; invulnerabilityTimer = 0; gameState = 'playing';
@@ -69,37 +102,29 @@ function startGame(carType) {
 function rectIntersect(r1, r2) { return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y); }
 
 function spawnEntities() {
-    // Civilians
     if(civilians.length < 25) {
         let cx = player.x + (Math.random() > 0.5 ? 1000 : -1000); let cy = player.y + (Math.random() > 0.5 ? 800 : -800);
         if(map.getTileTypeAt(cx, cy) === 1) civilians.push(new Civilian(cx, cy)); 
     }
-    // Pedestrians
     if(pedestrians.length < 30) {
         let px = player.x + (Math.random()*1600 - 800); let py = player.y + (Math.random()*1600 - 800);
         let t = map.getTileTypeAt(px, py); if(t === 0 || t === 4 || t === 5 || t === 6) pedestrians.push(new Pedestrian(px, py));
     }
     
-    // WANTED LEVEL LOGIC (Stars)
-    let stars = player.keysCollected + 1; // 0 keys = 1 star, 1 key = 2 stars, etc.
-    let maxCops = 0;
-    if (stars === 1) maxCops = 1;
-    else if (stars === 2) maxCops = 2;
-    else if (stars === 3) maxCops = 4;
-    else if (stars >= 4) maxCops = 4; // Plus Vans/Helis
+    let stars = player.keysCollected + 1;
+    let maxCops = (stars === 1) ? 1 : ((stars === 2) ? 2 : 4);
 
     if(police.length < maxCops) {
         let px = player.x + (Math.random() > 0.5 ? 900 : -900); let py = player.y + (Math.random() > 0.5 ? 700 : -700);
         if(map.getTileTypeAt(px, py) === 1) {
             let type = 1;
             if (stars === 3 && Math.random() < 0.5) type = 2;
-            if (stars === 4) type = 2; // Vans
-            if (stars >= 5) type = 3; // Tanks
+            if (stars === 4) type = 2; 
+            if (stars >= 5) type = 3; 
             police.push(new Police(px, py, type, player.keysCollected));
         }
     }
     
-    // Star 4+ Helicopter Spawn
     if (stars >= 4 && helicopters.length < 1) {
         helicopters.push(new Helicopter(player.x - 1200, player.y - 1200));
     }
@@ -128,7 +153,7 @@ function drawMinimap() {
     for(let y=0; y<map.rows; y++) {
         for(let x=0; x<map.cols; x++) {
             if(map.grid[y][x] === 2) drawDot(x * map.tileSize, y * map.tileSize, '#1a8cff', map.tileSize * scale);
-            if(map.grid[y][x] === 5) drawDot(x * map.tileSize, y * map.tileSize, '#ffd700', map.tileSize * scale); // Bank location
+            if(map.grid[y][x] === 5) drawDot(x * map.tileSize, y * map.tileSize, '#ffd700', map.tileSize * scale); 
         }
     }
     for(let f of map.fuels) if(!f.collected) drawDot(f.x, f.y, '#ff5500', 4);
@@ -157,7 +182,6 @@ function update() {
 
     let currentTile = map.getTileTypeAt(player.x, player.y);
     
-    // Helicopter spotlight logic
     player.underHeliSpotlight = false;
     for(let h of helicopters) {
         h.updateAI(player);
@@ -181,7 +205,6 @@ function update() {
 
     if (currentTile === 2) { gameState = 'gameover_drown'; return; }
     
-    // PLAYER WALL COLLISION (Fixed to stop movement smoothly instead of getting stuck)
     let nextTileX = map.getTileTypeAt(player.x + player.vx * 1.5, player.y);
     let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 1.5);
     if(nextTileX === 0 || nextTileX === 5 || nextTileX === 6) { player.vx = 0; player.speed *= 0.5; }
@@ -192,8 +215,7 @@ function update() {
     
     for(let k of map.keys) { 
         if(!k.collected && Math.hypot(player.x - k.x, player.y - k.y) < 50) { 
-            k.collected = true; player.keysCollected++; 
-            spawnInstantCopNearPlayer(); // Instant response
+            k.collected = true; player.keysCollected++; spawnInstantCopNearPlayer(); 
         } 
     }
 
@@ -203,7 +225,6 @@ function update() {
         }
     }
 
-    // Bullets hit player
     for(let b of bullets) {
         if (rectIntersect(pBounds, b.getBounds())) {
             b.life = 0;
@@ -220,13 +241,9 @@ function update() {
             let dx = player.x - c.x; let dy = player.y - c.y; let dist = Math.hypot(dx, dy);
             if (dist > 0) { 
                 player.vx += (dx / dist) * 2; player.vy += (dy / dist) * 2; 
-                
-                // Civilian wall collision check when pushed!
                 let pushX = -(dx / dist) * 2; let pushY = -(dy / dist) * 2;
                 let cNextT = map.getTileTypeAt(c.x + pushX, c.y + pushY);
-                if (cNextT !== 0 && cNextT !== 5 && cNextT !== 6 && cNextT !== 2) {
-                    c.vx += pushX; c.vy += pushY;
-                }
+                if (cNextT !== 0 && cNextT !== 5 && cNextT !== 6 && cNextT !== 2) { c.vx += pushX; c.vy += pushY; }
             }
             if (invulnerabilityTimer <= 0) {
                 player.health--; invulnerabilityTimer = 60; player.speed *= 0.5; 
