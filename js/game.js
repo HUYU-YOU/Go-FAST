@@ -8,7 +8,7 @@ let escCooldown = 0;
 let globalVolume = 0.5, isMuted = false, audioInitialized = false, radioCooldown = 0, currentRadioIndex = 0;
 const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
-    { name: "MAMACITA.fm", audio: new Audio('audio/MAMACITA.fm.mp3') },
+    { name: "MAMACITA.fm", audio: new Audio('audio/MAMACITA.FM.mp3') },
     { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
     { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') },
     { name: "agressi.fm", audio: new Audio('audio/agressi.fm.mp3') },
