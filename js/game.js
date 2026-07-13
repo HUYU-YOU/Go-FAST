@@ -47,7 +47,7 @@ const radioStations = [
     { name: "OLDSchoolFM", audio: new Audio('audio/OLDSchoolFM.mp3') },
     { name: "TahLaBrazil.ontadit", audio: new Audio('audio/TahLaBrazil.ontadit.mp3') },
     { name: "agressi.fm", audio: new Audio('audio/agressi.fm.mp3') },
-    { name: "MAMACITA.fm", audio: new Audio('audio/cyberponk.fm.mp3') },
+    { name: "cyberponk.fm", audio: new Audio('audio/cyberponk.fm.mp3') },
     { name: "epicOUrien.radio", audio: new Audio('audio/epicUrien.radio.mp3') },
 ];
 
