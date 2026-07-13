@@ -23,7 +23,6 @@ class Car {
 
 class Player extends Car {
     constructor(x, y, carType) {
-        // LE JOUEUR EST PLUS RAPIDE !
         let color = '#222'; let maxSpeed = 24.5; let maxHealth = 5; let fuelDrain = 0.04;
         if (carType === 'ferrari') { color = '#ffcc00'; maxSpeed = 28.5; maxHealth = 3; } 
         else { color = '#111111'; maxSpeed = 24.5; maxHealth = 5; }
@@ -36,7 +35,7 @@ class Player extends Car {
     
     updatePlayer(keysInput, currentTileType) {
         let currentMax = this.baseMaxSpeed;
-        if (currentTileType === 4) currentMax *= 0.5; // Ralenti sur l'herbe
+        if (currentTileType === 4) currentMax *= 0.5;
 
         if(keysInput.nitro && this.nitro > 0 && this.fuel > 0) {
             currentMax += 8; this.nitro -= 0.5; this.speed += this.acceleration * 1.8;
@@ -64,22 +63,17 @@ class Player extends Car {
     draw(ctx, camX, camY) {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         
-        // Base de la voiture
         ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
 
-        // GESTION DES DÉGÂTS VISUELS (Trous, rayures, fumée)
         if (this.health <= 3) {
-            ctx.fillStyle = '#111'; // Premier poc
-            ctx.beginPath(); ctx.arc(-this.w/4, -this.h/4, 4, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-this.w/4, -this.h/4, 4, 0, Math.PI*2); ctx.fill();
         }
         if (this.health <= 2) {
-            ctx.fillStyle = '#333'; // Grosse cabosse
-            ctx.beginPath(); ctx.arc(this.w/3, this.h/3, 5, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(this.w/3, this.h/3, 5, 0, Math.PI*2); ctx.fill();
         }
         if (this.health <= 1) {
-            ctx.fillStyle = '#ff3300'; // Début de feu/étincelles
-            ctx.fillRect(-this.w/2, -2, 6, 4);
+            ctx.fillStyle = '#ff3300'; ctx.fillRect(-this.w/2, -2, 6, 4);
         }
         ctx.restore();
     }
@@ -104,10 +98,10 @@ class Civilian extends Car {
 class Police extends Car {
     constructor(x, y, type) {
         super(x, y, 40, 24, 'blue'); this.type = type; this.spinTimer = 0;
-        // POLICE BEAUCOUP PLUS LENTE ! (Nerf massif pour te laisser fuir)
-        if (type === 1) { this.maxSpeed = 10.5; this.acceleration = 0.12; this.turnSpeed = 0.040; } 
-        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 7.5; this.acceleration = 0.08; this.turnSpeed = 0.030; } 
-        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 5.0; this.acceleration = 0.04; this.turnSpeed = 0.020; }
+        // NERF DE L'AGILITÉ : turnSpeed et acceleration réduits
+        if (type === 1) { this.maxSpeed = 10.5; this.acceleration = 0.09; this.turnSpeed = 0.032; } 
+        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 7.5; this.acceleration = 0.06; this.turnSpeed = 0.025; } 
+        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 5.0; this.acceleration = 0.03; this.turnSpeed = 0.015; }
     }
 
     updateAI(playerObj, mapObj) {
