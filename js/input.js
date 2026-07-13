@@ -1,4 +1,3 @@
-// js/input.js
 const keys = { up: false, down: false, left: false, right: false, nitro: false, decoy: false, enter: false, esc: false };
 
 window.addEventListener('keydown', (e) => {
