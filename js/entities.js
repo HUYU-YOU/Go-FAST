@@ -37,12 +37,14 @@ class Car {
 
 class Player extends Car {
     constructor(x, y, carType) {
-        let color = '#222'; let maxSpeed = 24.5; let maxHealth = 5; let fuelDrain = 0.04;
-        if (carType === 'ferrari') { color = '#ffcc00'; maxSpeed = 28.5; maxHealth = 3; } 
-        else { color = '#111111'; maxSpeed = 24.5; maxHealth = 5; }
+        let color = '#222'; 
+        // VITESSE JOUEUR +30% environ
+        let maxSpeed = 31.8; let maxHealth = 5; let fuelDrain = 0.04; 
+        if (carType === 'ferrari') { color = '#ffcc00'; maxSpeed = 37.0; maxHealth = 3; } 
+        else { color = '#111111'; maxSpeed = 31.8; maxHealth = 5; }
 
         super(x, y, 42, 24, color);
-        this.baseMaxSpeed = maxSpeed; this.acceleration = 0.35; 
+        this.baseMaxSpeed = maxSpeed; this.acceleration = 0.45; // Accélération boostée
         this.health = maxHealth; this.maxHealth = maxHealth; this.fuelDrainRate = fuelDrain;
         this.fuel = 100; this.nitro = 0; this.keysCollected = 0; this.arrestTimer = 0;
         this.underHeliSpotlight = false;
@@ -69,7 +71,6 @@ class Player extends Car {
             if (keysInput.right) this.angle += this.turnSpeed * dir;
         }
         
-        // --- DRIFT AUGMENTÉ --- (Passé de 0.88 à 0.94 : le cul glisse énormément plus !)
         let driftFactor = 0.94; 
         this.vx = this.vx * driftFactor + Math.cos(this.angle) * this.speed * (1 - driftFactor);
         this.vy = this.vy * driftFactor + Math.sin(this.angle) * this.speed * (1 - driftFactor);
@@ -91,7 +92,8 @@ class Player extends Car {
 class Civilian extends Car {
     constructor(x, y) {
         super(x, y, 40, 24, '#555560');
-        this.maxSpeed = 4 + Math.random() * 3; 
+        // VITESSE CIVILS -30%
+        this.maxSpeed = (4 + Math.random() * 3) * 0.7; 
         let dirs = [0, Math.PI/2, Math.PI, -Math.PI/2];
         this.angle = dirs[Math.floor(Math.random() * dirs.length)];
         this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed;
@@ -99,7 +101,8 @@ class Civilian extends Car {
     updateAI(mapObj) {
         let nextX = this.x + this.vx * 2; let nextY = this.y + this.vy * 2;
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
-        if(nextTile === 0 || nextTile === 2 || nextTile === 5 || nextTile === 6) {
+        // Ne rentre pas dans les bâtiments
+        if(nextTile === 0 || nextTile === 2 || nextTile === 5 || nextTile === 6 || nextTile === 7 || nextTile === 8) {
             this.angle += Math.PI/2;
             this.vx = Math.cos(this.angle) * this.maxSpeed;
             this.vy = Math.sin(this.angle) * this.maxSpeed;
@@ -115,12 +118,17 @@ class Civilian extends Car {
 }
 
 class Police extends Car {
-    constructor(x, y, type, playerKeys) {
+    constructor(x, y, type, wantedLevel) {
         super(x, y, 40, 24, 'blue'); this.type = type; this.spinTimer = 0; this.shootTimer = 0;
-        let speedBoost = playerKeys * 0.5; 
-        if (type === 1) { this.maxSpeed = 10.5 + speedBoost; this.acceleration = 0.09; this.turnSpeed = 0.032 + (playerKeys*0.002); } 
-        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 8.5 + speedBoost; this.acceleration = 0.06; this.turnSpeed = 0.025; } 
-        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 5.0 + speedBoost; this.acceleration = 0.03; this.turnSpeed = 0.015; }
+        this.dead = false; // Pour la mort dans l'eau
+        
+        // VITESSE POLICE -30% (Nerf massif). 
+        // Pas de speedboost de fou avant le 3ème cargo (wantedLevel >= 3)
+        let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
+        
+        if (type === 1) { this.maxSpeed = 7.3 + speedBoost; this.acceleration = 0.07; this.turnSpeed = 0.025; } 
+        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 5.9 + speedBoost; this.acceleration = 0.05; this.turnSpeed = 0.020; } 
+        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 3.5 + speedBoost; this.acceleration = 0.02; this.turnSpeed = 0.012; }
     }
 
     updateAI(playerObj, mapObj, bulletsArr) {
@@ -134,7 +142,8 @@ class Police extends Car {
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
 
         let targetAngle;
-        if (nextTile === 0 || nextTile === 2 || nextTile === 5 || nextTile === 6) {
+        // La police galère dans les bâtiments normaux, mais traverse son commissariat (8)
+        if (nextTile === 0 || nextTile === 5 || nextTile === 6 || nextTile === 7) {
             targetAngle = this.angle + (Math.PI / 1.5); this.speed *= 0.8;
         } else {
             targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
@@ -150,10 +159,17 @@ class Police extends Car {
         
         let currentTileX = mapObj.getTileTypeAt(this.x + this.vx, this.y);
         let currentTileY = mapObj.getTileTypeAt(this.x, this.y + this.vy);
-        if (currentTileX === 0 || currentTileX === 2 || currentTileX === 5 || currentTileX === 6) { this.vx = 0; this.speed *= 0.5; }
-        if (currentTileY === 0 || currentTileY === 2 || currentTileY === 5 || currentTileY === 6) { this.vy = 0; this.speed *= 0.5; }
+        
+        // Bloqué par les murs
+        if (currentTileX === 0 || currentTileX === 5 || currentTileX === 6 || currentTileX === 7) { this.vx = 0; this.speed *= 0.8; }
+        if (currentTileY === 0 || currentTileY === 5 || currentTileY === 6 || currentTileY === 7) { this.vy = 0; this.speed *= 0.8; }
 
         super.update();
+
+        // Mort dans l'eau
+        if(mapObj.getTileTypeAt(this.x, this.y) === 2) {
+            this.dead = true;
+        }
 
         if (this.type === 3) {
             this.shootTimer--;
