@@ -1,49 +1,32 @@
+// js/game.js
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-let map, player, civilians, police, pedestrians, particles, gameState = 'menu', camera, invulnerabilityTimer;
+let map, player, civilians, police, helicopters, pedestrians, particles, bullets;
+let gameState = 'menu', camera, invulnerabilityTimer;
 let escCooldown = 0;
 
-// --- GESTION AUDIO RESTAURÉE ---
+// AUDIO
 let globalVolume = 0.5, isMuted = false, audioInitialized = false, radioCooldown = 0, currentRadioIndex = 0;
 const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
-    { name: "MAMACITA.fm", audio: new Audio('audio/MAMACITA.FM.mp3') },
+    { name: "MAMACITA.fm", audio: new Audio('audio/MAMACITA.fm.mp3') },
     { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
-    { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') },
-    { name: "agressi.fm", audio: new Audio('audio/agressi.fm.mp3') },
-    { name: "epicUrien.radio", audio: new Audio('audio/epicUrien.radio.mp3') },
-    { name: "cyberponk.fm", audio: new Audio('audio/cyberponk.fm.mp3') },
-    { name: "TahLaBrazil.ontadit", audio: new Audio('audio/TahLaBrazil.ontadit.mp3') },
-    { name: "Slowwly.radio", audio: new Audio('audio/Slowwly.radio.mp3') },
-    { name: "OldSchoolFM", audio: new Audio('audio/OldSchoolFM.mp3') },
-    { name: "NightCarCrash", audio: new Audio('audio/NightCarCrash.mp3') }
+    { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') }
 ];
 
 window.addEventListener('click', () => {
     if(!audioInitialized) {
         audioInitialized = true; applyVolumeSettings();
-        if(gameState === 'menu' || gameState === 'car-select') menuMusic.play().catch(e=>console.log(e));
+        if(gameState === 'menu' || gameState === 'car-select') menuMusic.play().catch(e=>e);
     }
 });
-
-function adjustVolume(amount) {
-    globalVolume = Math.max(0, Math.min(1, globalVolume + amount));
-    if(globalVolume > 0) { isMuted = false; document.getElementById('mute-btn').innerText = "🔊"; }
-    applyVolumeSettings();
-}
-function toggleMute() { 
-    isMuted = !isMuted; document.getElementById('mute-btn').innerText = isMuted ? "❌" : "🔊"; 
-    applyVolumeSettings(); 
-}
+function changeGlobalVolume(val) { globalVolume = parseFloat(val); if(!isMuted) applyVolumeSettings(); }
+function toggleMute() { isMuted = !isMuted; document.getElementById('mute-btn').innerText = isMuted ? "❌" : "🔊"; applyVolumeSettings(); }
 function applyVolumeSettings() {
     let targetVol = isMuted ? 0 : globalVolume; menuMusic.volume = targetVol;
-    radioStations.forEach((r, idx) => { 
-        if(gameState === 'playing' && idx === currentRadioIndex) r.audio.volume = targetVol; 
-        else r.audio.volume = 0; 
-    });
+    radioStations.forEach((r, idx) => { if(gameState === 'playing' && idx === currentRadioIndex) r.audio.volume = targetVol; else r.audio.volume = 0; });
 }
-// -------------------------------
 
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
@@ -54,19 +37,23 @@ function showScreen(id) {
 function resumeGame() { 
     gameState = 'playing'; showScreen(null); 
     document.getElementById('bottom-hud').style.display = 'flex'; 
-    document.getElementById('radio-wrapper').style.display = 'flex';
-    applyVolumeSettings();
+    document.getElementById('radio-wrapper').style.display = 'flex'; applyVolumeSettings();
 }
 
 function startGame(carType) {
     map = new CityMap(); 
-    let px = map.width / 2; let py = map.height / 2;
-    while(map.getTileTypeAt(px, py) !== 1) { 
-        px += map.tileSize; if (px >= map.width) { px = 0; py += map.tileSize; }
-    }
+    
+    // START AT A BANK
+    let px = map.bankSpawn.x * map.tileSize;
+    let py = map.bankSpawn.y * map.tileSize;
+    
+    // Push slightly out to road
+    while(map.getTileTypeAt(px, py) !== 1) { px += map.tileSize; }
     
     player = new Player(px, py, carType);
-    civilians = []; police = []; pedestrians = []; particles = []; 
+    player.keysCollected = 0; // Starts at 0 keys, which means 1 Star.
+    
+    civilians = []; police = []; helicopters = []; pedestrians = []; particles = []; bullets = [];
     camera = { x: 0, y: 0 }; invulnerabilityTimer = 0; gameState = 'playing';
     
     showScreen(null); 
@@ -74,31 +61,55 @@ function startGame(carType) {
     document.getElementById('radio-wrapper').style.display = 'flex';
     
     if(audioInitialized) {
-        menuMusic.pause(); 
-        radioStations.forEach(r => { r.audio.loop = true; r.audio.volume = 0; r.audio.play().catch(e=>e); });
-        applyVolumeSettings(); 
-        document.getElementById('radio-display').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
+        menuMusic.pause(); radioStations.forEach(r => { r.audio.loop = true; r.audio.volume = 0; r.audio.play().catch(e=>e); });
+        applyVolumeSettings(); document.getElementById('radio-display').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
     }
 }
 
 function rectIntersect(r1, r2) { return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y); }
 
 function spawnEntities() {
+    // Civilians
     if(civilians.length < 25) {
         let cx = player.x + (Math.random() > 0.5 ? 1000 : -1000); let cy = player.y + (Math.random() > 0.5 ? 800 : -800);
         if(map.getTileTypeAt(cx, cy) === 1) civilians.push(new Civilian(cx, cy)); 
     }
-    if(police.length < 4 + player.keysCollected * 2) {
-        let px = player.x + (Math.random() > 0.5 ? 1100 : -1100); let py = player.y + (Math.random() > 0.5 ? 900 : -900);
-        if(map.getTileTypeAt(px, py) === 1) {
-            let type = 1; if(player.keysCollected >= 2 && Math.random() < 0.3) type = 2; if(player.keysCollected >= 4 && Math.random() < 0.2) type = 3;
-            police.push(new Police(px, py, type));
-        }
-    }
+    // Pedestrians
     if(pedestrians.length < 30) {
         let px = player.x + (Math.random()*1600 - 800); let py = player.y + (Math.random()*1600 - 800);
-        if(map.getTileTypeAt(px, py) === 0 || map.getTileTypeAt(px, py) === 4) pedestrians.push(new Pedestrian(px, py));
+        let t = map.getTileTypeAt(px, py); if(t === 0 || t === 4 || t === 5 || t === 6) pedestrians.push(new Pedestrian(px, py));
     }
+    
+    // WANTED LEVEL LOGIC (Stars)
+    let stars = player.keysCollected + 1; // 0 keys = 1 star, 1 key = 2 stars, etc.
+    let maxCops = 0;
+    if (stars === 1) maxCops = 1;
+    else if (stars === 2) maxCops = 2;
+    else if (stars === 3) maxCops = 4;
+    else if (stars >= 4) maxCops = 4; // Plus Vans/Helis
+
+    if(police.length < maxCops) {
+        let px = player.x + (Math.random() > 0.5 ? 900 : -900); let py = player.y + (Math.random() > 0.5 ? 700 : -700);
+        if(map.getTileTypeAt(px, py) === 1) {
+            let type = 1;
+            if (stars === 3 && Math.random() < 0.5) type = 2;
+            if (stars === 4) type = 2; // Vans
+            if (stars >= 5) type = 3; // Tanks
+            police.push(new Police(px, py, type, player.keysCollected));
+        }
+    }
+    
+    // Star 4+ Helicopter Spawn
+    if (stars >= 4 && helicopters.length < 1) {
+        helicopters.push(new Helicopter(player.x - 1200, player.y - 1200));
+    }
+}
+
+function spawnInstantCopNearPlayer() {
+    let px = player.x + (Math.random() > 0.5 ? 500 : -500); 
+    let py = player.y + (Math.random() > 0.5 ? 500 : -500);
+    let type = player.keysCollected >= 4 ? 3 : (player.keysCollected >= 2 ? 2 : 1);
+    police.push(new Police(px, py, type, player.keysCollected));
 }
 
 function drawMinimap() {
@@ -110,29 +121,27 @@ function drawMinimap() {
     function drawDot(worldX, worldY, color, size) {
         let dx = worldX - player.x; let dy = worldY - player.y;
         if(Math.abs(dx) < viewRadius && Math.abs(dy) < viewRadius) {
-            ctx.fillStyle = color;
-            ctx.fillRect(mmX + mmSize/2 + dx * scale - size/2, mmY + mmSize/2 + dy * scale - size/2, size, size);
+            ctx.fillStyle = color; ctx.fillRect(mmX + mmSize/2 + dx * scale - size/2, mmY + mmSize/2 + dy * scale - size/2, size, size);
         }
     }
 
     for(let y=0; y<map.rows; y++) {
         for(let x=0; x<map.cols; x++) {
             if(map.grid[y][x] === 2) drawDot(x * map.tileSize, y * map.tileSize, '#1a8cff', map.tileSize * scale);
+            if(map.grid[y][x] === 5) drawDot(x * map.tileSize, y * map.tileSize, '#ffd700', map.tileSize * scale); // Bank location
         }
     }
     for(let f of map.fuels) if(!f.collected) drawDot(f.x, f.y, '#ff5500', 4);
     for(let k of map.keys) if(!k.collected) drawDot(k.x, k.y, '#ffd700', 6);
     for(let p of police) drawDot(p.x, p.y, 'red', 4);
+    for(let h of helicopters) drawDot(h.x, h.y, 'magenta', 5);
 
     ctx.fillStyle = '#00ffcc'; ctx.beginPath(); ctx.arc(mmX + mmSize/2, mmY + mmSize/2, 4, 0, Math.PI*2); ctx.fill();
 }
 
 function update() {
     if(escCooldown > 0) escCooldown--;
-    if(keys.esc && escCooldown <= 0) { 
-        escCooldown = 20; 
-        if(gameState === 'playing') { gameState = 'paused'; showScreen('pause-screen'); radioStations.forEach(r=>r.audio.volume=0); return; } 
-    }
+    if(keys.esc && escCooldown <= 0) { escCooldown = 20; if(gameState === 'playing') { gameState = 'paused'; showScreen('pause-screen'); radioStations.forEach(r=>r.audio.volume=0); return; } }
     if(gameState !== 'playing') return;
     
     if(invulnerabilityTimer > 0) invulnerabilityTimer--;
@@ -147,40 +156,78 @@ function update() {
     if(player.fuel <= 0) { player.fuel = 0; player.baseMaxSpeed = 0; }
 
     let currentTile = map.getTileTypeAt(player.x, player.y);
+    
+    // Helicopter spotlight logic
+    player.underHeliSpotlight = false;
+    for(let h of helicopters) {
+        h.updateAI(player);
+        if(Math.hypot(player.x - h.x, player.y - h.y) < 200) player.underHeliSpotlight = true;
+    }
+    document.getElementById('heli-warning').style.display = player.underHeliSpotlight ? 'block' : 'none';
+
     player.updatePlayer(keys, currentTile); spawnEntities();
     
-    for(let c of civilians) c.update(); 
-    for(let p of police) p.updateAI(player, map); 
+    for(let c of civilians) c.updateAI(map); 
+    for(let p of police) p.updateAI(player, map, bullets); 
     for(let ped of pedestrians) ped.update(map);
     for(let pt of particles) pt.update();
+    for(let b of bullets) b.update();
 
     civilians = civilians.filter(c => Math.abs(c.x - player.x) < 2200 && Math.abs(c.y - player.y) < 2200);
     police = police.filter(p => Math.abs(p.x - player.x) < 2200 && Math.abs(p.y - player.y) < 2200);
     pedestrians = pedestrians.filter(p => p.alive && Math.abs(p.x - player.x) < 1800);
     particles = particles.filter(p => p.life > 0);
+    bullets = bullets.filter(b => b.life > 0);
 
     if (currentTile === 2) { gameState = 'gameover_drown'; return; }
     
-    let nextTileX = map.getTileTypeAt(player.x + player.vx * 2, player.y);
-    let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 2);
-    if(nextTileX === 0) { player.vx *= -0.5; player.speed *= 0.5; }
-    if(nextTileY === 0) { player.vy *= -0.5; player.speed *= 0.5; }
+    // PLAYER WALL COLLISION (Fixed to stop movement smoothly instead of getting stuck)
+    let nextTileX = map.getTileTypeAt(player.x + player.vx * 1.5, player.y);
+    let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 1.5);
+    if(nextTileX === 0 || nextTileX === 5 || nextTileX === 6) { player.vx = 0; player.speed *= 0.5; }
+    if(nextTileY === 0 || nextTileY === 5 || nextTileY === 6) { player.vy = 0; player.speed *= 0.5; }
 
     let pBounds = player.getBounds();
     for(let f of map.fuels) { if(!f.collected && Math.hypot(player.x - f.x, player.y - f.y) < 50) { f.collected = true; player.fuel = Math.min(100, player.fuel + f.amount); } }
-    for(let k of map.keys) { if(!k.collected && Math.hypot(player.x - k.x, player.y - k.y) < 50) { k.collected = true; player.keysCollected++; } }
+    
+    for(let k of map.keys) { 
+        if(!k.collected && Math.hypot(player.x - k.x, player.y - k.y) < 50) { 
+            k.collected = true; player.keysCollected++; 
+            spawnInstantCopNearPlayer(); // Instant response
+        } 
+    }
 
     for(let ped of pedestrians) {
         if(ped.alive && Math.hypot(player.x - ped.x, player.y - ped.y) < 25) {
-            ped.alive = false;
-            for(let i=0; i<15; i++) particles.push(new Particle(ped.x, ped.y, '#cc0000'));
+            ped.alive = false; for(let i=0; i<15; i++) particles.push(new Particle(ped.x, ped.y, '#cc0000'));
+        }
+    }
+
+    // Bullets hit player
+    for(let b of bullets) {
+        if (rectIntersect(pBounds, b.getBounds())) {
+            b.life = 0;
+            if (invulnerabilityTimer <= 0) {
+                player.health--; invulnerabilityTimer = 60; player.speed *= 0.5; 
+                for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#ff3300'));
+                if(player.health <= 0) gameState = 'gameover_crash';
+            }
         }
     }
 
     for(let c of civilians) {
         if(rectIntersect(pBounds, c.getBounds())) {
             let dx = player.x - c.x; let dy = player.y - c.y; let dist = Math.hypot(dx, dy);
-            if (dist > 0) { player.vx += (dx / dist) * 2; player.vy += (dy / dist) * 2; c.vx -= (dx / dist) * 2; c.vy -= (dy / dist) * 2; }
+            if (dist > 0) { 
+                player.vx += (dx / dist) * 2; player.vy += (dy / dist) * 2; 
+                
+                // Civilian wall collision check when pushed!
+                let pushX = -(dx / dist) * 2; let pushY = -(dy / dist) * 2;
+                let cNextT = map.getTileTypeAt(c.x + pushX, c.y + pushY);
+                if (cNextT !== 0 && cNextT !== 5 && cNextT !== 6 && cNextT !== 2) {
+                    c.vx += pushX; c.vy += pushY;
+                }
+            }
             if (invulnerabilityTimer <= 0) {
                 player.health--; invulnerabilityTimer = 60; player.speed *= 0.5; 
                 for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#555'));
@@ -192,25 +239,21 @@ function update() {
     let underArrest = false;
     for(let p of police) {
         if(rectIntersect(pBounds, p.getBounds())) {
-            if(p.type === 3) gameState = 'gameover_crash';
-
             let dx = player.x - p.x; let dy = player.y - p.y; let dist = Math.hypot(dx, dy);
-            
             if (dist > 0) {
                 player.vx += (dx / dist) * 3; player.vy += (dy / dist) * 3;
-                p.vx -= (dx / dist) * 3; p.vy -= (dy / dist) * 3;
+                let pNextT = map.getTileTypeAt(p.x - (dx/dist)*3, p.y - (dy/dist)*3);
+                if(pNextT !== 0 && pNextT !== 5 && pNextT !== 6 && pNextT !== 2) {
+                    p.vx -= (dx / dist) * 3; p.vy -= (dy / dist) * 3;
+                }
             }
-
             player.speed *= 0.70; p.speed *= 0.50;
 
-            // DÉGÂTS AU JOUEUR MÊME PAR LA POLICE MAINTENANT
             if (invulnerabilityTimer <= 0) {
-                player.health--; 
-                invulnerabilityTimer = 60; 
+                player.health--; invulnerabilityTimer = 60; 
                 for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#555'));
                 if(player.health <= 0) gameState = 'gameover_crash';
             }
-
             if(Math.abs(player.speed) < 2.0) underArrest = true; 
         }
     }
@@ -231,6 +274,7 @@ function update() {
     document.getElementById('health').innerText = `HULL: ${player.health}/${player.maxHealth}`;
     document.getElementById('fuel').innerText = `FUEL: ${Math.ceil(player.fuel)}%`;
     document.getElementById('nitro').innerText = `NITRO: ${Math.ceil(player.nitro)}% [SPACE]`;
+    document.getElementById('cargo').innerText = `CARGO: ${player.keysCollected}/5`;
     document.getElementById('wanted-display').innerText = `WANTED: ${'★'.repeat(Math.min(5, player.keysCollected + 1))}`;
 }
 
@@ -242,7 +286,9 @@ function draw() {
         for(let ped of pedestrians) ped.draw(ctx, camera.x, camera.y);
         for(let c of civilians) c.draw(ctx, camera.x, camera.y); 
         for(let p of police) p.draw(ctx, camera.x, camera.y);
+        for(let b of bullets) b.draw(ctx, camera.x, camera.y);
         if(invulnerabilityTimer % 10 < 5) player.draw(ctx, camera.x, camera.y);
+        for(let h of helicopters) h.draw(ctx, camera.x, camera.y);
         
         drawMinimap();
     }
