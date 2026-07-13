@@ -9,13 +9,13 @@ body {
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.8); border: 2px solid #222;
 }
 #bg-slider {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; 
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+    z-index: 4; /* <-- Changé à 4 pour être au-dessus du canvas noir */
     background-size: cover; background-position: center;
     transition: background-image 1.5s ease-in-out; pointer-events: none; display: block;
 }
 canvas { display: block; background-color: #1a1a20; position: relative; z-index: 2; }
 
-/* Nouveau conteneur de son en haut à gauche */
 #global-audio-controls {
     position: absolute; top: 20px; left: 20px; z-index: 100;
     display: flex; align-items: center; gap: 10px;
@@ -36,6 +36,7 @@ canvas { display: block; background-color: #1a1a20; position: relative; z-index:
 #wanted-display {
     position: absolute; right: 25px; top: 15px; color: #ff3333;
     font-size: 24px; font-weight: bold; letter-spacing: 2px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
 }
 #bottom-hud {
     position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
@@ -53,7 +54,7 @@ canvas { display: block; background-color: #1a1a20; position: relative; z-index:
     background: rgba(10, 10, 15, 0.96); display: flex; flex-direction: column;
     justify-content: center; align-items: center; z-index: 10;
 }
-.screen.with-bg { background: rgba(10, 10, 15, 0.4); }
+.screen.with-bg { background: rgba(10, 10, 15, 0.4); } /* Transparence pour voir les images */
 .screen-content {
     position: relative; z-index: 15; display: flex; flex-direction: column;
     align-items: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
