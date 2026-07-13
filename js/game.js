@@ -1,3 +1,4 @@
+// js/game.js
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -174,7 +175,7 @@ function spawnInstantCopNearPlayer() {
 }
 
 function drawMinimap() {
-    let mmSize = 160; let mmX = 20; let mmY = 70; // Décalé pour ne pas gêner le son
+    let mmSize = 160; let mmX = 20; let mmY = 70; 
     
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(mmX, mmY, mmSize, mmSize);
     ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 2; ctx.strokeRect(mmX, mmY, mmSize, mmSize);
@@ -243,10 +244,12 @@ function update() {
 
     if (currentTile === 2) { gameState = 'gameover_drown'; return; }
     
+    // --- PLUS DE RALENTISSEMENT CONTRE LES MURS ---
     let nextTileX = map.getTileTypeAt(player.x + player.vx * 1.5, player.y);
     let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 1.5);
-    if(nextTileX === 0 || nextTileX === 5 || nextTileX === 6) { player.vx = 0; player.speed *= 0.5; }
-    if(nextTileY === 0 || nextTileY === 5 || nextTileY === 6) { player.vy = 0; player.speed *= 0.5; }
+    // On annule juste le vecteur de déplacement pour glisser, on ne touche plus à player.speed
+    if(nextTileX === 0 || nextTileX === 5 || nextTileX === 6) { player.vx = 0; }
+    if(nextTileY === 0 || nextTileY === 5 || nextTileY === 6) { player.vy = 0; }
 
     let pBounds = player.getBounds();
     for(let f of map.fuels) { if(!f.collected && Math.hypot(player.x - f.x, player.y - f.y) < 50) { f.collected = true; player.fuel = Math.min(100, player.fuel + f.amount); } }
@@ -263,11 +266,12 @@ function update() {
         }
     }
 
+    // --- TEMPS D'INVINCIBILITÉ AJUSTÉ À 0.7 SECONDE (42 FRAMES) ---
     for(let b of bullets) {
         if (rectIntersect(pBounds, b.getBounds())) {
             b.life = 0;
             if (invulnerabilityTimer <= 0) {
-                player.health--; invulnerabilityTimer = 60; player.speed *= 0.5; 
+                player.health--; invulnerabilityTimer = 42; player.speed *= 0.5; 
                 for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#ff3300'));
                 if(player.health <= 0) gameState = 'gameover_crash';
             }
@@ -284,7 +288,7 @@ function update() {
                 if (cNextT !== 0 && cNextT !== 5 && cNextT !== 6 && cNextT !== 2) { c.vx += pushX; c.vy += pushY; }
             }
             if (invulnerabilityTimer <= 0) {
-                player.health--; invulnerabilityTimer = 60; player.speed *= 0.5; 
+                player.health--; invulnerabilityTimer = 42; player.speed *= 0.5; 
                 for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#555'));
                 if(player.health <= 0) gameState = 'gameover_crash';
             }
@@ -305,7 +309,7 @@ function update() {
             player.speed *= 0.70; p.speed *= 0.50;
 
             if (invulnerabilityTimer <= 0) {
-                player.health--; invulnerabilityTimer = 60; 
+                player.health--; invulnerabilityTimer = 42; 
                 for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#555'));
                 if(player.health <= 0) gameState = 'gameover_crash';
             }
