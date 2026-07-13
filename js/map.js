@@ -1,4 +1,3 @@
-// js/map.js
 class CityMap {
     constructor() {
         this.tileSize = 250; 
@@ -67,34 +66,29 @@ class CityMap {
                 let type = this.grid[y][x];
 
                 if (type === 0) { 
-                    // Normal Building
                     ctx.fillStyle = '#8a8a8a'; ctx.fillRect(px, py, this.tileSize, this.tileSize); // Trottoir
                     ctx.fillStyle = '#4a4a52'; ctx.fillRect(px + 25, py + 25, this.tileSize - 50, this.tileSize - 50);
                     ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.strokeRect(px + 25, py + 25, this.tileSize - 50, this.tileSize - 50);
                 } 
-                else if (type === 5) {
-                    // Bank (Gold/White)
-                    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(px, py, this.tileSize, this.tileSize); // Trottoir
+                else if (type === 5) { // Bank 
+                    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(px, py, this.tileSize, this.tileSize); 
                     ctx.fillStyle = '#f2e8c9'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40);
                     ctx.fillStyle = '#d4af37'; ctx.fillRect(px + 40, py + 40, this.tileSize - 80, this.tileSize - 80);
                     ctx.fillStyle = 'black'; ctx.font = 'bold 40px Courier'; ctx.fillText('$', px + this.tileSize/2 - 12, py + this.tileSize/2 + 15);
                 }
-                else if (type === 6) {
-                    // Hospital (White with Red Cross)
-                    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(px, py, this.tileSize, this.tileSize); // Trottoir
+                else if (type === 6) { // Hospital 
+                    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(px, py, this.tileSize, this.tileSize); 
                     ctx.fillStyle = '#f0f0f0'; ctx.fillRect(px + 25, py + 25, this.tileSize - 50, this.tileSize - 50);
                     ctx.fillStyle = '#ff3333'; 
                     ctx.fillRect(px + this.tileSize/2 - 10, py + 40, 20, this.tileSize - 80);
                     ctx.fillRect(px + 40, py + this.tileSize/2 - 10, this.tileSize - 80, 20);
                 }
-                else if (type === 1) { 
-                    // Road + Crosswalks if near intersection
+                else if (type === 1) { // Road
                     ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
                     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.lineWidth = 2; ctx.setLineDash([20, 20]); ctx.beginPath();
                     ctx.moveTo(px, py + this.tileSize/2); ctx.lineTo(px + this.tileSize, py + this.tileSize/2);
                     ctx.moveTo(px + this.tileSize/2, py); ctx.lineTo(px + this.tileSize/2, py + this.tileSize); ctx.stroke(); ctx.setLineDash([]);
                     
-                    // Crosswalk visuals randomly or at intersections
                     if ((x % 3 === 0) && (y % 3 === 0)) {
                         ctx.fillStyle = 'rgba(255,255,255,0.6)';
                         for(let i=0; i<5; i++) {
@@ -118,6 +112,7 @@ class CityMap {
                 }
             }
         }
+        
         ctx.fillStyle = '#ffd700'; 
         for(let k of this.keys) {
             if(!k.collected && k.x > camX && k.x < camX+canvas.width && k.y > camY && k.y < camY+canvas.height) {
