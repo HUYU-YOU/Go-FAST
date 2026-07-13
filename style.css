@@ -10,27 +10,23 @@ body {
 }
 canvas { display: block; background-color: #1a1a20; }
 #top-hud {
-    position: absolute; top: 0; left: 0; width: 100%;
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 15px 25px; box-sizing: border-box; pointer-events: none; z-index: 5;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 5;
 }
 #radio-wrapper {
-    position: absolute; left: 50%; transform: translateX(-50%);
+    position: absolute; left: 50%; transform: translateX(-50%); top: 15px;
     background: rgba(15, 15, 25, 0.9); border: 2px solid #cc66ff;
     padding: 8px 16px; border-radius: 6px; display: none;
     align-items: center; gap: 10px; pointer-events: auto;
-    box-shadow: 0 0 15px rgba(204,102,255,0.3);
 }
 #radio-display { color: #cc66ff; font-weight: bold; font-size: 14px; }
 .audio-btn {
     background: #cc66ff; border: none; color: black; font-weight: bold;
-    cursor: pointer; padding: 2px 8px; border-radius: 3px; font-family: inherit;
+    cursor: pointer; padding: 2px 8px; border-radius: 3px;
 }
-.audio-btn:hover { background: #b34dd2; }
 #wanted-display {
-    position: absolute; right: 25px; color: #ff3333;
+    position: absolute; right: 25px; top: 15px; color: #ff3333;
     font-size: 22px; font-weight: bold; letter-spacing: 2px;
-    text-shadow: 0 0 8px rgba(255,51,51,0.6);
 }
 #bottom-hud {
     position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
@@ -42,30 +38,20 @@ canvas { display: block; background-color: #1a1a20; }
 #bottom-hud #fuel { color: #ff5500; }
 #bottom-hud #nitro { color: #00e5ff; }
 #bottom-hud #cargo { color: #ffbb00; }
-#bottom-hud #objective { color: #fff; }
 .screen {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(10, 10, 15, 0.96); display: flex; flex-direction: column;
     justify-content: center; align-items: center; z-index: 10;
 }
-.screen h1 { font-size: 55px; color: #00ffcc; margin-bottom: 25px; letter-spacing: 4px; }
+.screen h1 { font-size: 55px; color: #00ffcc; margin-bottom: 25px; }
 .screen button {
     padding: 12px 35px; font-size: 18px; background: #00ffcc; color: black;
-    font-weight: bold; border: none; cursor: pointer; border-radius: 4px;
-    margin: 8px; font-family: inherit; transition: 0.15s;
+    font-weight: bold; border: none; cursor: pointer; border-radius: 4px; margin: 8px;
 }
-.screen button:hover { background: #00ccaa; transform: scale(1.04); }
 .car-roster { display: flex; gap: 20px; }
-.car-card {
-    background: #151520; border: 2px solid #333; padding: 20px; border-radius: 8px;
-    cursor: pointer; transition: 0.15s; width: 200px; text-align: left;
-}
-.car-card:hover { border-color: #00ffcc; transform: translateY(-5px); }
-.car-card h3 { margin: 0 0 10px 0; font-size: 15px; text-align: center; }
-.car-card p { font-size: 12px; margin: 6px 0; color: #bbb; }
+.car-card { background: #151520; border: 2px solid #333; padding: 20px; cursor: pointer; width: 200px; }
 #arrest-warning {
     position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
     color: red; font-size: 40px; font-weight: bold; animation: blink 0.4s infinite; z-index: 4;
 }
 @keyframes blink { 0% { opacity:0; } 50% { opacity:1; } 100% { opacity:0; } }
-.volume-slider-wrapper { display: flex; align-items: center; gap: 15px; font-weight: bold; }
