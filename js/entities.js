@@ -69,7 +69,8 @@ class Player extends Car {
             if (keysInput.right) this.angle += this.turnSpeed * dir;
         }
         
-        let driftFactor = 0.88; 
+        // --- DRIFT AUGMENTÉ --- (Passé de 0.88 à 0.94 : le cul glisse énormément plus !)
+        let driftFactor = 0.94; 
         this.vx = this.vx * driftFactor + Math.cos(this.angle) * this.speed * (1 - driftFactor);
         this.vy = this.vy * driftFactor + Math.sin(this.angle) * this.speed * (1 - driftFactor);
         
@@ -168,7 +169,6 @@ class Police extends Car {
         ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
         
-        // Lumières clignotantes pour les Vans (type 2)
         if (this.type === 2) {
             let time = Date.now();
             ctx.fillStyle = (time % 300 < 150) ? 'red' : '#1e3ee6';
