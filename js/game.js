@@ -1,4 +1,3 @@
-// js/game.js
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -87,7 +86,7 @@ function resumeGame() {
 
 startBgSlider();
 
-// --- LOGIQUE DE CHARGEMENT DE ~6.5 SECONDES ---
+// --- LOGIQUE DE CHARGEMENT ---
 function startGame(carType) {
     gameState = 'loading';
     showScreen('loading-screen');
@@ -244,10 +243,8 @@ function update() {
 
     if (currentTile === 2) { gameState = 'gameover_drown'; return; }
     
-    // --- PLUS DE RALENTISSEMENT CONTRE LES MURS ---
     let nextTileX = map.getTileTypeAt(player.x + player.vx * 1.5, player.y);
     let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 1.5);
-    // On annule juste le vecteur de déplacement pour glisser, on ne touche plus à player.speed
     if(nextTileX === 0 || nextTileX === 5 || nextTileX === 6) { player.vx = 0; }
     if(nextTileY === 0 || nextTileY === 5 || nextTileY === 6) { player.vy = 0; }
 
@@ -266,7 +263,7 @@ function update() {
         }
     }
 
-    // --- TEMPS D'INVINCIBILITÉ AJUSTÉ À 0.7 SECONDE (42 FRAMES) ---
+    // 0.7 secondes d'invulnérabilité = 42 frames
     for(let b of bullets) {
         if (rectIntersect(pBounds, b.getBounds())) {
             b.life = 0;
@@ -351,13 +348,51 @@ function draw() {
         
         drawMinimap();
     }
+    
+    // --- NOUVEAU SYSTÈME D'IMAGES DE FIN ---
     if(gameState.startsWith('gameover') || gameState === 'win') {
-        showScreen('message-screen'); radioStations.forEach(r=>r.audio.volume=0);
-        let title = document.getElementById('msg-title'); let sub = document.getElementById('msg-sub');
-        if(gameState === 'gameover_crash') { title.innerText = "VEHICLE DESTROYED"; title.style.color = "#ff1a1a"; sub.innerText = "Your ride is totalled."; } 
-        else if (gameState === 'gameover_arrest') { title.innerText = "BUSTED!"; title.style.color = "#1a1aff"; sub.innerText = "The police boxed you in."; } 
-        else if (gameState === 'gameover_drown') { title.innerText = "WASTED"; title.style.color = "#1a8cff"; sub.innerText = "You drove into the river."; }
-        else if (gameState === 'win') { title.innerText = "DELIVERY SUCCESSFUL!"; title.style.color = "#00ff66"; sub.innerText = "All keys found. Escape complete."; }
+        showScreen('message-screen'); 
+        radioStations.forEach(r=>r.audio.volume=0);
+        
+        let title = document.getElementById('msg-title'); 
+        let sub = document.getElementById('msg-sub');
+        let msgScreen = document.getElementById('message-screen');
+        
+        // Configuration du conteneur pour afficher l'image de fond proprement
+        msgScreen.style.backgroundSize = "cover";
+        msgScreen.style.backgroundPosition = "center";
+        msgScreen.style.backgroundColor = "rgba(0,0,0,0.9)"; 
+        
+        // Textes ajustés avec ombres pour être lisibles sur les images
+        title.style.textShadow = "3px 3px 6px black";
+        sub.style.textShadow = "2px 2px 4px black";
+        sub.style.fontSize = "30px";
+        sub.style.fontWeight = "bold";
+
+        if(gameState === 'gameover_crash') { 
+            title.innerText = ""; 
+            sub.innerText = "Apprend a conduire"; 
+            sub.style.color = "#ff1a1a";
+            msgScreen.style.backgroundImage = "url('img/broken_end.png')";
+        } 
+        else if (gameState === 'gameover_arrest') { 
+            title.innerText = ""; 
+            sub.innerText = "Tu t'es chopper"; 
+            sub.style.color = "#1a1aff";
+            msgScreen.style.backgroundImage = "url('img/police_end.png')";
+        } 
+        else if (gameState === 'gameover_drown') { 
+            title.innerText = ""; 
+            sub.innerText = "T'es tombe a l'eau"; 
+            sub.style.color = "#1a8cff";
+            msgScreen.style.backgroundImage = "url('img/water_end.png')";
+        }
+        else if (gameState === 'win') { 
+            title.innerText = "GO-FAST RÉUSSI !"; 
+            title.style.color = "#00ff66"; 
+            sub.innerText = ""; 
+            msgScreen.style.backgroundImage = "url('img/win_end.png')";
+        }
     }
     requestAnimationFrame(draw);
 }
