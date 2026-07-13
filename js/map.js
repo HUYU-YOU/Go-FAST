@@ -30,7 +30,9 @@ class CityMap {
                     } 
                     else if (r < 0.03) type = 5; // Other Banks
                     else if (r < 0.08) type = 6; // Hospital
-                    else if (r < 0.25) type = 4; // Park
+                    else if (r < 0.13) type = 7; // GARAGE (Nouveau)
+                    else if (r < 0.18) type = 8; // POLICE STATION (Nouveau)
+                    else if (r < 0.30) type = 4; // Park
                 }
                 row.push(type);
             }
@@ -66,7 +68,7 @@ class CityMap {
                 let type = this.grid[y][x];
 
                 if (type === 0) { 
-                    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(px, py, this.tileSize, this.tileSize); // Trottoir
+                    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
                     ctx.fillStyle = '#4a4a52'; ctx.fillRect(px + 25, py + 25, this.tileSize - 50, this.tileSize - 50);
                     ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.strokeRect(px + 25, py + 25, this.tileSize - 50, this.tileSize - 50);
                 } 
@@ -83,19 +85,21 @@ class CityMap {
                     ctx.fillRect(px + this.tileSize/2 - 10, py + 40, 20, this.tileSize - 80);
                     ctx.fillRect(px + 40, py + this.tileSize/2 - 10, this.tileSize - 80, 20);
                 }
+                else if (type === 7) { // Garage (Réparation)
+                    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(px, py, this.tileSize, this.tileSize); 
+                    ctx.fillStyle = '#222'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40);
+                    ctx.fillStyle = '#00ffcc'; ctx.font = 'bold 30px Courier'; ctx.fillText('🔧', px + this.tileSize/2 - 15, py + this.tileSize/2 + 10);
+                }
+                else if (type === 8) { // Commissariat
+                    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(px, py, this.tileSize, this.tileSize); 
+                    ctx.fillStyle = '#1a1aff'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40);
+                    ctx.fillStyle = 'white'; ctx.font = 'bold 24px Courier'; ctx.fillText('POLICE', px + 35, py + this.tileSize/2 + 10);
+                }
                 else if (type === 1) { // Road
                     ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
                     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.lineWidth = 2; ctx.setLineDash([20, 20]); ctx.beginPath();
                     ctx.moveTo(px, py + this.tileSize/2); ctx.lineTo(px + this.tileSize, py + this.tileSize/2);
                     ctx.moveTo(px + this.tileSize/2, py); ctx.lineTo(px + this.tileSize/2, py + this.tileSize); ctx.stroke(); ctx.setLineDash([]);
-                    
-                    if ((x % 3 === 0) && (y % 3 === 0)) {
-                        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-                        for(let i=0; i<5; i++) {
-                            ctx.fillRect(px + 20, py + 20 + i*40, 40, 20);
-                            ctx.fillRect(px + this.tileSize - 60, py + 20 + i*40, 40, 20);
-                        }
-                    }
                 }
                 else if (type === 2) { 
                     ctx.fillStyle = '#1a8cff'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
