@@ -1,3 +1,4 @@
+// js/input.js
 const keys = { up: false, down: false, left: false, right: false, nitro: false, decoy: false, enter: false, esc: false };
 
 window.addEventListener('keydown', (e) => {
@@ -7,7 +8,6 @@ window.addEventListener('keydown', (e) => {
     if(k === 'arrowleft' || k === 'q' || k === 'a') keys.left = true;
     if(k === 'arrowright' || k === 'd') keys.right = true;
     if(e.key === ' ') { keys.nitro = true; e.preventDefault(); }
-    if(e.key === 'Shift') { keys.decoy = true; e.preventDefault(); }
     if(e.key === 'Enter') { keys.enter = true; e.preventDefault(); }
     if(e.key === 'Escape') { keys.esc = true; e.preventDefault(); }
 });
@@ -19,7 +19,6 @@ window.addEventListener('keyup', (e) => {
     if(k === 'arrowleft' || k === 'q' || k === 'a') keys.left = false;
     if(k === 'arrowright' || k === 'd') keys.right = false;
     if(e.key === ' ') keys.nitro = false;
-    if(e.key === 'Shift') keys.decoy = false;
     if(e.key === 'Enter') keys.enter = false;
     if(e.key === 'Escape') keys.esc = false;
 });
