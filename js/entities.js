@@ -1,4 +1,3 @@
-// js/entities.js
 class Particle {
     constructor(x, y, color) {
         this.x = x; this.y = y;
@@ -52,7 +51,7 @@ class Player extends Car {
     updatePlayer(keysInput, currentTileType) {
         let currentMax = this.baseMaxSpeed;
         if (currentTileType === 4) currentMax *= 0.5;
-        if (this.underHeliSpotlight) currentMax *= 0.6; // Heli slows you down
+        if (this.underHeliSpotlight) currentMax *= 0.6; 
 
         if(keysInput.nitro && this.nitro > 0 && this.fuel > 0) {
             currentMax += 8; this.nitro -= 0.5; this.speed += this.acceleration * 1.8;
@@ -79,10 +78,8 @@ class Player extends Car {
 
     draw(ctx, camX, camY) {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
-        
         ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
-
         if (this.health <= 3) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-this.w/4, -this.h/4, 4, 0, Math.PI*2); ctx.fill(); }
         if (this.health <= 2) { ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(this.w/3, this.h/3, 5, 0, Math.PI*2); ctx.fill(); }
         if (this.health <= 1) { ctx.fillStyle = '#ff3300'; ctx.fillRect(-this.w/2, -2, 6, 4); }
@@ -101,7 +98,6 @@ class Civilian extends Car {
     updateAI(mapObj) {
         let nextX = this.x + this.vx * 2; let nextY = this.y + this.vy * 2;
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
-        // Turn around if heading into building/water/bank/hospital
         if(nextTile === 0 || nextTile === 2 || nextTile === 5 || nextTile === 6) {
             this.angle += Math.PI/2;
             this.vx = Math.cos(this.angle) * this.maxSpeed;
@@ -120,13 +116,10 @@ class Civilian extends Car {
 class Police extends Car {
     constructor(x, y, type, playerKeys) {
         super(x, y, 40, 24, 'blue'); this.type = type; this.spinTimer = 0; this.shootTimer = 0;
-        
-        // Speed scales with cargo (keys) collected
         let speedBoost = playerKeys * 0.5; 
-        
-        if (type === 1) { this.maxSpeed = 10.5 + speedBoost; this.acceleration = 0.10; this.turnSpeed = 0.035 + (playerKeys*0.002); } 
-        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 8.5 + speedBoost; this.acceleration = 0.07; this.turnSpeed = 0.028; } 
-        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 5.0 + speedBoost; this.acceleration = 0.04; this.turnSpeed = 0.015; }
+        if (type === 1) { this.maxSpeed = 10.5 + speedBoost; this.acceleration = 0.09; this.turnSpeed = 0.032 + (playerKeys*0.002); } 
+        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 8.5 + speedBoost; this.acceleration = 0.06; this.turnSpeed = 0.025; } 
+        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 5.0 + speedBoost; this.acceleration = 0.03; this.turnSpeed = 0.015; }
     }
 
     updateAI(playerObj, mapObj, bulletsArr) {
@@ -161,12 +154,11 @@ class Police extends Car {
 
         super.update();
 
-        // Tank Shooting Logic
         if (this.type === 3) {
             this.shootTimer--;
             if (this.shootTimer <= 0 && Math.hypot(playerObj.x - this.x, playerObj.y - this.y) < 800) {
                 bulletsArr.push(new Bullet(this.x, this.y, targetAngle));
-                this.shootTimer = 90; // 1.5 seconds between shots
+                this.shootTimer = 90; 
             }
         }
     }
@@ -175,10 +167,7 @@ class Police extends Car {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
-        
-        if(this.type === 3) {
-            ctx.fillStyle = '#333'; ctx.fillRect(0, -4, 40, 8); // Tank barrel
-        }
+        if(this.type === 3) { ctx.fillStyle = '#333'; ctx.fillRect(0, -4, 40, 8); }
         ctx.restore();
     }
 }
@@ -192,20 +181,15 @@ class Helicopter {
         let diff = targetAngle - this.angle;
         while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
         this.angle += Math.sign(diff) * Math.min(Math.abs(diff), 0.05);
-        
-        this.x += Math.cos(this.angle) * this.speed;
-        this.y += Math.sin(this.angle) * this.speed;
+        this.x += Math.cos(this.angle) * this.speed; this.y += Math.sin(this.angle) * this.speed;
     }
     draw(ctx, camX, camY) {
-        // Draw Spotlight
         ctx.fillStyle = 'rgba(255, 255, 100, 0.3)';
         ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 200, 0, Math.PI*2); ctx.fill();
-        
-        // Draw Heli
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#333'; ctx.fillRect(0, -2, 30, 4); // Tail
-        ctx.fillStyle = '#555'; ctx.fillRect(-30, -2, 60, 4); // Rotors (simple)
+        ctx.fillStyle = '#333'; ctx.fillRect(0, -2, 30, 4); 
+        ctx.fillStyle = '#555'; ctx.fillRect(-30, -2, 60, 4); 
         ctx.restore();
     }
 }
@@ -222,7 +206,6 @@ class Pedestrian {
         if(!this.alive) return;
         let nextX = this.x + this.vx; let nextY = this.y + this.vy;
         let tile = mapObj.getTileTypeAt(nextX, nextY);
-        // Pedestrians prefer sidewalks (0, 5, 6) or parks (4), avoid water (2)
         if(tile === 2) {
             this.vx *= -1; this.vy *= -1; 
         } else {
@@ -233,6 +216,6 @@ class Pedestrian {
     draw(ctx, camX, camY) {
         if(!this.alive) return;
         ctx.fillStyle = this.shirtColor; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, this.w/2, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#ffcc99'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY - 2, 4, 0, Math.PI*2); ctx.fill(); // Head
+        ctx.fillStyle = '#ffcc99'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY - 2, 4, 0, Math.PI*2); ctx.fill(); 
     }
 }
