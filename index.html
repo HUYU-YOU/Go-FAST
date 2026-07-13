@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +7,9 @@
 </head>
 <body>
     <div id="game-container">
+        <!-- Slider d'images en fond -->
+        <div id="bg-slider"></div>
+
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
         
         <div id="top-hud">
@@ -29,41 +31,49 @@
             <span id="objective">Obj: Escape the Bank!</span>
         </div>
 
-        <div id="main-menu" class="screen">
-            <h1>GO-FAST</h1>
-            <p style="color:#aaa; margin-bottom: 20px;">Click anywhere to enable audio</p>
-            <button onclick="showScreen('car-select')">PLAY</button>
-        </div>
-
-        <div id="pause-screen" class="screen" style="display: none; background: rgba(0,0,0,0.85);">
-            <h1>PAUSED</h1>
-            <button onclick="resumeGame()">RESUME</button>
-            <button onclick="location.reload()">QUIT</button>
-        </div>
-
-        <div id="car-select" class="screen" style="display: none;">
-            <h2>SELECT YOUR RIDE</h2>
-            <div class="car-roster">
-                <div class="car-card" onclick="startGame('ferrari')">
-                    <h3 style="color:#ffcc00;">YELLOW FERRARI</h3>
-                    <p>Speed: ██████████</p>
-                    <p>Endurance: ██░░░░░░░░</p>
-                    <p>Hull: 3 HP</p>
-                </div>
-                <div class="car-card" onclick="startGame('gti')">
-                    <h3 style="color:#888;">MATTE BLACK GTI</h3>
-                    <p>Speed: ███████░░░</p>
-                    <p>Endurance: ███████░░░</p>
-                    <p>Hull: 5 HP</p>
-                </div>
+        <div id="main-menu" class="screen with-bg">
+            <div class="screen-content">
+                <h1>GO-FAST</h1>
+                <p style="color:#aaa; margin-bottom: 20px; text-shadow: 1px 1px 2px black;">Click anywhere to enable audio</p>
+                <button onclick="showScreen('car-select')">PLAY</button>
             </div>
-            <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
         </div>
 
-        <div id="message-screen" class="screen" style="display: none;">
-            <h1 id="msg-title"></h1>
-            <p id="msg-sub"></p>
-            <button onclick="location.reload()">MAIN MENU</button>
+        <div id="pause-screen" class="screen with-bg" style="display: none;">
+            <div class="screen-content">
+                <h1>PAUSED</h1>
+                <button onclick="resumeGame()">RESUME</button>
+                <button onclick="location.reload()">QUIT</button>
+            </div>
+        </div>
+
+        <div id="car-select" class="screen with-bg" style="display: none;">
+            <div class="screen-content">
+                <h2>SELECT YOUR RIDE</h2>
+                <div class="car-roster">
+                    <div class="car-card" onclick="startGame('ferrari')">
+                        <h3 style="color:#ffcc00;">YELLOW FERRARI</h3>
+                        <p>Speed: ██████████</p>
+                        <p>Endurance: ██░░░░░░░░</p>
+                        <p>Hull: 3 HP</p>
+                    </div>
+                    <div class="car-card" onclick="startGame('gti')">
+                        <h3 style="color:#888;">MATTE BLACK GTI</h3>
+                        <p>Speed: ███████░░░</p>
+                        <p>Endurance: ███████░░░</p>
+                        <p>Hull: 5 HP</p>
+                    </div>
+                </div>
+                <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
+            </div>
+        </div>
+
+        <div id="message-screen" class="screen with-bg" style="display: none;">
+            <div class="screen-content">
+                <h1 id="msg-title"></h1>
+                <p id="msg-sub"></p>
+                <button onclick="location.reload()">MAIN MENU</button>
+            </div>
         </div>
         
         <div id="arrest-warning" style="display:none;">BUST IMMINENT!</div>
