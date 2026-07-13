@@ -1,3 +1,4 @@
+// js/entities.js
 class Particle {
     constructor(x, y, color) {
         this.x = x; this.y = y;
@@ -9,6 +10,20 @@ class Particle {
         ctx.globalAlpha = Math.max(0, this.life / 100); ctx.fillStyle = this.color;
         ctx.fillRect(this.x - camX, this.y - camY, this.size, this.size); ctx.globalAlpha = 1;
     }
+}
+
+class Bullet {
+    constructor(x, y, angle) {
+        this.x = x; this.y = y; this.angle = angle;
+        this.speed = 15; this.life = 100;
+        this.vx = Math.cos(this.angle) * this.speed;
+        this.vy = Math.sin(this.angle) * this.speed;
+    }
+    update() { this.x += this.vx; this.y += this.vy; this.life--; }
+    draw(ctx, camX, camY) {
+        ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 4, 0, Math.PI*2); ctx.fill();
+    }
+    getBounds() { return {x: this.x-4, y: this.y-4, w: 8, h: 8}; }
 }
 
 class Car {
@@ -31,11 +46,13 @@ class Player extends Car {
         this.baseMaxSpeed = maxSpeed; this.acceleration = 0.35; 
         this.health = maxHealth; this.maxHealth = maxHealth; this.fuelDrainRate = fuelDrain;
         this.fuel = 100; this.nitro = 0; this.keysCollected = 0; this.arrestTimer = 0;
+        this.underHeliSpotlight = false;
     }
     
     updatePlayer(keysInput, currentTileType) {
         let currentMax = this.baseMaxSpeed;
         if (currentTileType === 4) currentMax *= 0.5;
+        if (this.underHeliSpotlight) currentMax *= 0.6; // Heli slows you down
 
         if(keysInput.nitro && this.nitro > 0 && this.fuel > 0) {
             currentMax += 8; this.nitro -= 0.5; this.speed += this.acceleration * 1.8;
@@ -66,15 +83,9 @@ class Player extends Car {
         ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
 
-        if (this.health <= 3) {
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-this.w/4, -this.h/4, 4, 0, Math.PI*2); ctx.fill();
-        }
-        if (this.health <= 2) {
-            ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(this.w/3, this.h/3, 5, 0, Math.PI*2); ctx.fill();
-        }
-        if (this.health <= 1) {
-            ctx.fillStyle = '#ff3300'; ctx.fillRect(-this.w/2, -2, 6, 4);
-        }
+        if (this.health <= 3) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-this.w/4, -this.h/4, 4, 0, Math.PI*2); ctx.fill(); }
+        if (this.health <= 2) { ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(this.w/3, this.h/3, 5, 0, Math.PI*2); ctx.fill(); }
+        if (this.health <= 1) { ctx.fillStyle = '#ff3300'; ctx.fillRect(-this.w/2, -2, 6, 4); }
         ctx.restore();
     }
 }
@@ -87,6 +98,17 @@ class Civilian extends Car {
         this.angle = dirs[Math.floor(Math.random() * dirs.length)];
         this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed;
     }
+    updateAI(mapObj) {
+        let nextX = this.x + this.vx * 2; let nextY = this.y + this.vy * 2;
+        let nextTile = mapObj.getTileTypeAt(nextX, nextY);
+        // Turn around if heading into building/water/bank/hospital
+        if(nextTile === 0 || nextTile === 2 || nextTile === 5 || nextTile === 6) {
+            this.angle += Math.PI/2;
+            this.vx = Math.cos(this.angle) * this.maxSpeed;
+            this.vy = Math.sin(this.angle) * this.maxSpeed;
+        }
+        super.update();
+    }
     draw(ctx, camX, camY) {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
@@ -96,15 +118,18 @@ class Civilian extends Car {
 }
 
 class Police extends Car {
-    constructor(x, y, type) {
-        super(x, y, 40, 24, 'blue'); this.type = type; this.spinTimer = 0;
-        // NERF DE L'AGILITÉ : turnSpeed et acceleration réduits
-        if (type === 1) { this.maxSpeed = 10.5; this.acceleration = 0.09; this.turnSpeed = 0.032; } 
-        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 7.5; this.acceleration = 0.06; this.turnSpeed = 0.025; } 
-        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 5.0; this.acceleration = 0.03; this.turnSpeed = 0.015; }
+    constructor(x, y, type, playerKeys) {
+        super(x, y, 40, 24, 'blue'); this.type = type; this.spinTimer = 0; this.shootTimer = 0;
+        
+        // Speed scales with cargo (keys) collected
+        let speedBoost = playerKeys * 0.5; 
+        
+        if (type === 1) { this.maxSpeed = 10.5 + speedBoost; this.acceleration = 0.10; this.turnSpeed = 0.035 + (playerKeys*0.002); } 
+        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 8.5 + speedBoost; this.acceleration = 0.07; this.turnSpeed = 0.028; } 
+        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 5.0 + speedBoost; this.acceleration = 0.04; this.turnSpeed = 0.015; }
     }
 
-    updateAI(playerObj, mapObj) {
+    updateAI(playerObj, mapObj, bulletsArr) {
         if(this.spinTimer > 0) { 
             this.spinTimer--; this.angle += 0.2; this.vx *= 0.92; this.vy *= 0.92; 
             this.x += this.vx; this.y += this.vy; return; 
@@ -115,7 +140,7 @@ class Police extends Car {
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
 
         let targetAngle;
-        if (nextTile === 0 || nextTile === 2) {
+        if (nextTile === 0 || nextTile === 2 || nextTile === 5 || nextTile === 6) {
             targetAngle = this.angle + (Math.PI / 1.5); this.speed *= 0.8;
         } else {
             targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
@@ -131,39 +156,83 @@ class Police extends Car {
         
         let currentTileX = mapObj.getTileTypeAt(this.x + this.vx, this.y);
         let currentTileY = mapObj.getTileTypeAt(this.x, this.y + this.vy);
-        if (currentTileX === 0 || currentTileX === 2) { this.vx *= -0.5; this.speed *= 0.5; }
-        if (currentTileY === 0 || currentTileY === 2) { this.vy *= -0.5; this.speed *= 0.5; }
+        if (currentTileX === 0 || currentTileX === 2 || currentTileX === 5 || currentTileX === 6) { this.vx = 0; this.speed *= 0.5; }
+        if (currentTileY === 0 || currentTileY === 2 || currentTileY === 5 || currentTileY === 6) { this.vy = 0; this.speed *= 0.5; }
 
         super.update();
+
+        // Tank Shooting Logic
+        if (this.type === 3) {
+            this.shootTimer--;
+            if (this.shootTimer <= 0 && Math.hypot(playerObj.x - this.x, playerObj.y - this.y) < 800) {
+                bulletsArr.push(new Bullet(this.x, this.y, targetAngle));
+                this.shootTimer = 90; // 1.5 seconds between shots
+            }
+        }
     }
     draw(ctx, camX, camY) {
         this.color = Math.floor(Date.now() / 150) % 2 === 0 ? (this.type === 3 ? '#1e4620' : '#d91e1e') : (this.type === 3 ? '#0d260f' : '#1e3ee6');
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
+        
+        if(this.type === 3) {
+            ctx.fillStyle = '#333'; ctx.fillRect(0, -4, 40, 8); // Tank barrel
+        }
+        ctx.restore();
+    }
+}
+
+class Helicopter {
+    constructor(x, y) {
+        this.x = x; this.y = y; this.w = 50; this.h = 50; this.angle = 0; this.speed = 18;
+    }
+    updateAI(playerObj) {
+        let targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
+        let diff = targetAngle - this.angle;
+        while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
+        this.angle += Math.sign(diff) * Math.min(Math.abs(diff), 0.05);
+        
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed;
+    }
+    draw(ctx, camX, camY) {
+        // Draw Spotlight
+        ctx.fillStyle = 'rgba(255, 255, 100, 0.3)';
+        ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 200, 0, Math.PI*2); ctx.fill();
+        
+        // Draw Heli
+        ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
+        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#333'; ctx.fillRect(0, -2, 30, 4); // Tail
+        ctx.fillStyle = '#555'; ctx.fillRect(-30, -2, 60, 4); // Rotors (simple)
         ctx.restore();
     }
 }
 
 class Pedestrian {
     constructor(x, y) {
-        this.x = x; this.y = y; this.w = 12; this.h = 12;
+        this.x = x; this.y = y; this.w = 14; this.h = 14;
         this.vx = (Math.random() - 0.5); this.vy = (Math.random() - 0.5);
         this.alive = true;
+        let colors = ['#3366cc', '#cc3333', '#33cc33', '#ffffff', '#ff9900'];
+        this.shirtColor = colors[Math.floor(Math.random() * colors.length)];
     }
     update(mapObj) {
         if(!this.alive) return;
         let nextX = this.x + this.vx; let nextY = this.y + this.vy;
-        if(mapObj.getTileTypeAt(nextX, nextY) === 1 || mapObj.getTileTypeAt(nextX, nextY) === 2) {
+        let tile = mapObj.getTileTypeAt(nextX, nextY);
+        // Pedestrians prefer sidewalks (0, 5, 6) or parks (4), avoid water (2)
+        if(tile === 2) {
             this.vx *= -1; this.vy *= -1; 
         } else {
             this.x += this.vx; this.y += this.vy;
         }
-        if(Math.random() < 0.01) { this.vx = (Math.random() - 0.5); this.vy = (Math.random() - 0.5); }
+        if(Math.random() < 0.02) { this.vx = (Math.random() - 0.5)*1.5; this.vy = (Math.random() - 0.5)*1.5; }
     }
     draw(ctx, camX, camY) {
         if(!this.alive) return;
-        ctx.fillStyle = '#ffcc99'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, this.w/2, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#3366cc'; ctx.fillRect(this.x - camX - 4, this.y - camY - 2, 8, 8);
+        ctx.fillStyle = this.shirtColor; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, this.w/2, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ffcc99'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY - 2, 4, 0, Math.PI*2); ctx.fill(); // Head
     }
 }
