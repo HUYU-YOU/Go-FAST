@@ -1,3 +1,4 @@
+// js/game.js
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -63,7 +64,8 @@ function showScreen(id) {
     document.getElementById('radio-wrapper').style.display = 'none';
     if(id) document.getElementById(id).style.display = 'flex';
 
-    if(id === 'main-menu' || id === 'car-select' || id === 'pause-screen' || id === 'message-screen') {
+    // Le slider reste actif pendant le chargement (loading-screen)
+    if(id === 'main-menu' || id === 'car-select' || id === 'pause-screen' || id === 'message-screen' || id === 'loading-screen') {
         startBgSlider();
     } else if (id === null && gameState === 'playing') {
         stopBgSlider();
@@ -78,7 +80,33 @@ function resumeGame() {
 // On lance le slider au tout début
 startBgSlider();
 
+// --- LOGIQUE DE CHARGEMENT ---
 function startGame(carType) {
+    gameState = 'loading';
+    showScreen('loading-screen');
+    
+    let progress = 0;
+    let loadingBar = document.getElementById('loading-bar');
+    let loadingText = document.getElementById('loading-text');
+    loadingBar.style.width = '0%';
+    loadingText.innerText = '0%';
+
+    // Simule un temps de chargement
+    let loadInterval = setInterval(() => {
+        progress += Math.floor(Math.random() * 15) + 5;
+        if(progress >= 100) {
+            progress = 100;
+            clearInterval(loadInterval);
+            setTimeout(() => {
+                finishStartGame(carType);
+            }, 600); // Petite pause à 100% avant de lancer
+        }
+        loadingBar.style.width = progress + '%';
+        loadingText.innerText = progress + '%';
+    }, 250);
+}
+
+function finishStartGame(carType) {
     map = new CityMap(); 
     let px = map.bankSpawn.x * map.tileSize; let py = map.bankSpawn.y * map.tileSize;
     while(map.getTileTypeAt(px, py) !== 1) { px += map.tileSize; } // Move to road
