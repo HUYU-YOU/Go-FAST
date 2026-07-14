@@ -2,15 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GoFast - Overdrive (Ultimate Edition)</title>
+    <title>GoFast - Ultimate Edition</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
-        <!-- Slider d'images en fond -->
         <div id="bg-slider"></div>
 
-        <!-- Contrôles Audio Globaux (En haut à gauche) -->
         <div id="global-audio-controls">
             <button id="mute-btn" onclick="toggleMute()">🔊</button>
             <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
@@ -21,7 +19,7 @@
         <div id="top-hud">
             <div id="minimap-container"></div>
             <div id="radio-wrapper">
-                <span id="radio-display">📻 RADIO: OFF [ENTER]</span>
+                <span id="radio-display">📻 RADIO: OFF</span>
             </div>
             <div id="wanted-display">WANTED: ★</div>
         </div>
@@ -31,23 +29,13 @@
             <span id="fuel">FUEL: 100%</span>
             <span id="nitro">NITRO: 0% [SPACE]</span>
             <span id="cargo">CARGO: 0/5</span>
-            <span id="objective">Obj: Escape the Bank!</span>
         </div>
 
         <div id="main-menu" class="screen with-bg">
             <div class="screen-content">
                 <h1>GO-FAST</h1>
-                <p style="color:#aaa; margin-bottom: 20px; text-shadow: 1px 1px 2px black;">Click anywhere to enable audio</p>
-                <!-- Le bouton qui posait problème -->
-                <button onclick="showScreen('car-select')">PLAY</button>
-            </div>
-        </div>
-
-        <div id="pause-screen" class="screen with-bg" style="display: none;">
-            <div class="screen-content">
-                <h1>PAUSED</h1>
-                <button onclick="resumeGame()">RESUME</button>
-                <button onclick="location.reload()">QUIT</button>
+                <p>Click anywhere to enable audio</p>
+                <button id="play-btn" onclick="showScreen('car-select')">PLAY</button>
             </div>
         </div>
 
@@ -55,35 +43,18 @@
             <div class="screen-content">
                 <h2>SELECT YOUR RIDE</h2>
                 <div class="car-roster">
-                    <div class="car-card" onclick="startGame('fer')">
-                        <h3 style="color:#ffcc00;">YELLOW FERRARI</h3>
-                        <p>Speed: ██████████</p>
-                        <p>Endurance: ██░░░░░░░░</p>
-                        <p>Hull: 3 HP</p>
-                    </div>
-                    <div class="car-card" onclick="startGame('gti')">
-                        <h3 style="color:#888;">MATTE BLACK GTI</h3>
-                        <p>Speed: ███████░░░</p>
-                        <p>Endurance: ███████░░░</p>
-                        <p>Hull: 5 HP</p>
-                    </div>
-                    <div class="car-card" onclick="startGame('cab')">
-                        <h3 style="color:#a32cc4;">PURPLE CABRIOLET</h3>
-                        <p>Speed: █████░░░░░</p>
-                        <p>Endurance: ██████████</p>
-                        <p>Hull: 7 HP</p>
-                    </div>
+                    <div class="car-card" onclick="startGame('fer')"><h3>FERRARI</h3></div>
+                    <div class="car-card" onclick="startGame('gti')"><h3>GTI</h3></div>
+                    <div class="car-card" onclick="startGame('cab')"><h3>CABRIOLET</h3></div>
                 </div>
-                <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
+                <button onclick="showScreen('main-menu')">BACK</button>
             </div>
         </div>
 
         <div id="loading-screen" class="screen with-bg" style="display: none;">
             <div class="screen-content">
-                <h2>LOADING SYSTEM...</h2>
-                <div style="width: 400px; height: 25px; border: 2px solid #00ffcc; border-radius: 5px; margin-top: 20px; overflow: hidden; background: rgba(0,0,0,0.5);">
-                    <div id="loading-bar" style="width: 0%; height: 100%; background-color: #00ffcc; transition: width 0.15s ease-out;"></div>
-                </div>
+                <h2>LOADING...</h2>
+                <div id="loading-bar-bg"><div id="loading-bar"></div></div>
                 <p id="loading-text" style="margin-top: 15px; font-weight: bold; font-size: 18px; color: #00ffcc;">0%</p>
             </div>
         </div>
@@ -95,12 +66,8 @@
                 <button onclick="location.reload()">MAIN MENU</button>
             </div>
         </div>
-        
-        <div id="arrest-warning" style="display:none;">BUST IMMINENT!</div>
-        <div id="heli-warning" style="display:none;">⚠️ HELICOPTER SPOTLIGHT - SPEED REDUCED ⚠️</div>
     </div>
 
-    <!-- ORDRE STRICT DES SCRIPTS -->
     <script src="js/input.js"></script>
     <script src="js/entities.js"></script>
     <script src="js/map.js"></script>
