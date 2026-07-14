@@ -31,7 +31,6 @@ function stopBgSlider() {
 
 let globalVolume = 0.5, isMuted = false, audioInitialized = false, radioCooldown = 0, currentRadioIndex = 0;
 
-// LES NOMS CORRESPONDENT A 100% A TON DOSSIER AUDIO
 const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
     { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') },
@@ -72,8 +71,12 @@ startBgSlider();
 
 function startGame(carType) {
     gameState = 'loading'; showScreen('loading-screen');
-    let progress = 0; let loadingBar = document.getElementById('loading-bar');
-    loadingBar.style.width = '0%';
+    let progress = 0; 
+    let loadingBar = document.getElementById('loading-bar');
+    let loadingText = document.getElementById('loading-text');
+    
+    if(loadingBar) loadingBar.style.width = '0%';
+    if(loadingText) loadingText.innerText = '0%';
 
     let loadInterval = setInterval(() => {
         progress += (Math.random() * 2 + 2); 
@@ -81,7 +84,8 @@ function startGame(carType) {
             progress = 100; clearInterval(loadInterval);
             setTimeout(() => { finishStartGame(carType); }, 600); 
         }
-        loadingBar.style.width = progress + '%';
+        if(loadingBar) loadingBar.style.width = progress + '%';
+        if(loadingText) loadingText.innerText = Math.floor(progress) + '%';
     }, 150);
 }
 
