@@ -1,6 +1,3 @@
-// js/entities.js
-
-// --- CHARGEMENT DE TOUS LES ASSETS (SKINS) ---
 const ASSETS = {
     civilians: [], peds: [], buildings: [], parks: [],
     gti: [], cab: [], fer: [], cops: [],
@@ -74,11 +71,11 @@ class Player extends Car {
         let color = '#222'; 
         let maxSpeed = 31.8; let maxHealth = 5; let fuelDrain = 0.04; 
         if (carType === 'fer') { color = '#ffcc00'; maxSpeed = 37.0; maxHealth = 3; } 
-        else if (carType === 'cab') { color = '#a32cc4'; maxSpeed = 26.5; maxHealth = 7; } // Cabriolet
+        else if (carType === 'cab') { color = '#a32cc4'; maxSpeed = 26.5; maxHealth = 7; }
         else { color = '#111111'; maxSpeed = 31.8; maxHealth = 5; }
 
         super(x, y, 42, 24, color);
-        this.carType = carType; // 'gti', 'fer', 'cab'
+        this.carType = carType; 
         this.baseMaxSpeed = maxSpeed; this.acceleration = 0.45; 
         this.health = maxHealth; this.maxHealth = maxHealth; this.fuelDrainRate = fuelDrain;
         this.fuel = 100; this.nitro = 0; this.keysCollected = 0; this.arrestTimer = 0;
@@ -117,8 +114,8 @@ class Player extends Car {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         
         let arr = ASSETS[this.carType];
-        let state = Math.ceil((this.health / this.maxHealth) * 5); // 1 à 5
-        let idx = 5 - state; // 0 = Parfait, 4 = Détruit
+        let state = Math.ceil((this.health / this.maxHealth) * 5);
+        let idx = 5 - state; 
         idx = Math.max(0, Math.min(4, idx));
         
         let img = arr[idx];
@@ -127,8 +124,6 @@ class Player extends Car {
         } else {
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
             ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
-            if (this.health <= 3) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-this.w/4, -this.h/4, 4, 0, Math.PI*2); ctx.fill(); }
-            if (this.health <= 1) { ctx.fillStyle = '#ff3300'; ctx.fillRect(-this.w/2, -2, 6, 4); }
         }
         ctx.restore();
     }
@@ -160,7 +155,6 @@ class Civilian extends Car {
             ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
         } else {
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-            ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
         }
         ctx.restore();
     }
@@ -170,7 +164,7 @@ class Police extends Car {
     constructor(x, y, type, wantedLevel) {
         super(x, y, 40, 24, 'blue'); this.type = type; this.spinTimer = 0; this.shootTimer = 0;
         this.dead = false; 
-        this.skinIndex = Math.floor(Math.random() * 2); // Random entre cops1 et cops2
+        this.skinIndex = Math.floor(Math.random() * 2);
         
         let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
         
@@ -233,14 +227,10 @@ class Police extends Car {
         if (img && img.complete && img.naturalWidth) {
             ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
         } else {
-            // Fallback
             this.color = (this.type === 3) ? '#1e4620' : '#1e3ee6';
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-            ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
-            if(this.type === 3) { ctx.fillStyle = '#333'; ctx.fillRect(0, -4, 40, 8); }
         }
         
-        // Lumières clignotantes
         if (this.type === 1 || this.type === 2) {
             let time = Date.now();
             ctx.fillStyle = (time % 300 < 150) ? 'red' : 'blue';
@@ -272,8 +262,6 @@ class Helicopter {
             ctx.drawImage(ASSETS.helico, -this.w/2, -this.h/2, this.w, this.h);
         } else {
             ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#333'; ctx.fillRect(0, -2, 30, 4); 
-            ctx.fillStyle = '#555'; ctx.fillRect(-30, -2, 60, 4); 
         }
         ctx.restore();
     }
