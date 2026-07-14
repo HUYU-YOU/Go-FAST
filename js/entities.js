@@ -6,27 +6,35 @@ const ASSETS = {
     van: new Image(), tank: new Image(), helico: new Image()
 };
 
-for(let i=1; i<=12; i++) { let img = new Image(); img.src = `img/car${i}.png`; ASSETS.civilians.push(img); }
-for(let i=1; i<=13; i++) { let img = new Image(); img.src = `img/pnj${i}.png`; ASSETS.peds.push(img); }
-for(let i=1; i<=15; i++) { let img = new Image(); img.src = `img/bat${i}.png`; ASSETS.buildings.push(img); }
-for(let i=1; i<=5; i++) {
-    let g = new Image(); g.src = `img/GTI${i}.png`; ASSETS.gti.push(g);
-    let c = new Image(); c.src = `img/CAB${i}.png`; ASSETS.cab.push(c);
-    let f = new Image(); f.src = `img/FER${i}.png`; ASSETS.fer.push(f);
+// Fonction utilitaire pour charger en silence sans faire planter
+function loadImg(path) {
+    let img = new Image();
+    img.src = path;
+    img.onerror = () => { console.warn("Image manquante: " + path); };
+    return img;
 }
-for(let i=1; i<=2; i++) { let img = new Image(); img.src = `img/cops${i}.png`; ASSETS.cops.push(img); }
-for(let i=1; i<=3; i++) { let img = new Image(); img.src = `img/parc${i}.png`; ASSETS.parks.push(img); }
 
-ASSETS.police.src = 'img/police.png';
-ASSETS.chu.src = 'img/chu.png';
-ASSETS.garage.src = 'img/garage.png';
-ASSETS.water.src = 'img/eau.png';
-ASSETS.roadH.src = 'img/roadhorizontale.png';
-ASSETS.roadV.src = 'img/roadverticale.png';
-ASSETS.crossroad.src = 'img/carrefour.png';
-ASSETS.van.src = 'img/Van.png';
-ASSETS.tank.src = 'img/Tank.png';
-ASSETS.helico.src = 'img/helico.png';
+for(let i=1; i<=12; i++) ASSETS.civilians.push(loadImg(`img/car${i}.png`));
+for(let i=1; i<=13; i++) ASSETS.peds.push(loadImg(`img/pnj${i}.png`));
+for(let i=1; i<=15; i++) ASSETS.buildings.push(loadImg(`img/bat${i}.png`));
+for(let i=1; i<=5; i++) {
+    ASSETS.gti.push(loadImg(`img/GTI${i}.png`));
+    ASSETS.cab.push(loadImg(`img/CAB${i}.png`));
+    ASSETS.fer.push(loadImg(`img/FER${i}.png`));
+}
+for(let i=1; i<=2; i++) ASSETS.cops.push(loadImg(`img/cops${i}.png`));
+for(let i=1; i<=3; i++) ASSETS.parks.push(loadImg(`img/parc${i}.png`));
+
+ASSETS.police = loadImg('img/police.png');
+ASSETS.chu = loadImg('img/chu.png');
+ASSETS.garage = loadImg('img/garage.png');
+ASSETS.water = loadImg('img/eau.png');
+ASSETS.roadH = loadImg('img/roadhorizontale.png');
+ASSETS.roadV = loadImg('img/roadverticale.png');
+ASSETS.crossroad = loadImg('img/carrefour.png');
+ASSETS.van = loadImg('img/Van.png');
+ASSETS.tank = loadImg('img/Tank.png');
+ASSETS.helico = loadImg('img/helico.png');
 
 class Particle {
     constructor(x, y, color) {
