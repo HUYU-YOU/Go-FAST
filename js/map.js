@@ -6,7 +6,7 @@ class CityMap {
         this.width = this.cols * this.tileSize;
         this.height = this.rows * this.tileSize;
         this.grid = []; this.keys = []; this.fuels = []; this.wrenches = [];
-        this.bankSpawn = {x: 0, y: 0};
+        this.bankSpawn = {x: 20, y: 20}; // Fallback très sécurisé
         this.generateMap(); this.placeInteractables();
     }
 
@@ -79,37 +79,35 @@ class CityMap {
                 if (type === 0) { 
                     let bgIdx = (x * 13 + y * 7) % 15; 
                     let img = ASSETS.buildings[bgIdx];
-                    if(img && img.complete && img.naturalWidth) {
+                    if(img && img.complete && img.naturalWidth > 0) {
                         ctx.drawImage(img, px + 10, py + 10, this.tileSize - 20, this.tileSize - 20);
                     } else {
                         ctx.fillStyle = '#4a4a52'; ctx.fillRect(px + 25, py + 25, this.tileSize - 50, this.tileSize - 50);
                     }
                 } 
                 else if (type === 5) { 
-                    if(ASSETS.bank && ASSETS.bank.complete && ASSETS.bank.naturalWidth) {
+                    if(ASSETS.bank && ASSETS.bank.complete && ASSETS.bank.naturalWidth > 0) {
                         ctx.drawImage(ASSETS.bank, px + 10, py + 10, this.tileSize - 20, this.tileSize - 20);
                     } else {
                         ctx.fillStyle = '#f2e8c9'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40);
-                        ctx.fillStyle = '#d4af37'; ctx.fillRect(px + 40, py + 40, this.tileSize - 80, this.tileSize - 80);
-                        ctx.fillStyle = 'black'; ctx.font = 'bold 40px Courier'; ctx.fillText('$', px + this.tileSize/2 - 12, py + this.tileSize/2 + 15);
                     }
                 }
                 else if (type === 6) { 
-                    if(ASSETS.chu && ASSETS.chu.complete && ASSETS.chu.naturalWidth) {
+                    if(ASSETS.chu && ASSETS.chu.complete && ASSETS.chu.naturalWidth > 0) {
                         ctx.drawImage(ASSETS.chu, px + 10, py + 10, this.tileSize - 20, this.tileSize - 20);
                     } else {
                         ctx.fillStyle = '#f0f0f0'; ctx.fillRect(px + 25, py + 25, this.tileSize - 50, this.tileSize - 50);
                     }
                 }
                 else if (type === 7) { 
-                    if(ASSETS.garage && ASSETS.garage.complete && ASSETS.garage.naturalWidth) {
+                    if(ASSETS.garage && ASSETS.garage.complete && ASSETS.garage.naturalWidth > 0) {
                         ctx.drawImage(ASSETS.garage, px + 10, py + 10, this.tileSize - 20, this.tileSize - 20);
                     } else {
                         ctx.fillStyle = '#222'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40);
                     }
                 }
                 else if (type === 8) { 
-                    if(ASSETS.police && ASSETS.police.complete && ASSETS.police.naturalWidth) {
+                    if(ASSETS.police && ASSETS.police.complete && ASSETS.police.naturalWidth > 0) {
                         ctx.drawImage(ASSETS.police, px + 10, py + 10, this.tileSize - 20, this.tileSize - 20);
                     } else {
                         ctx.fillStyle = '#1a1aff'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40);
@@ -123,14 +121,14 @@ class CityMap {
                     else if (isV) img = ASSETS.roadV;
                     else img = ASSETS.roadH;
 
-                    if (img && img.complete && img.naturalWidth) {
+                    if (img && img.complete && img.naturalWidth > 0) {
                         ctx.drawImage(img, px, py, this.tileSize, this.tileSize);
                     } else {
                         ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
                     }
                 }
                 else if (type === 2) { 
-                    if (ASSETS.water && ASSETS.water.complete && ASSETS.water.naturalWidth) {
+                    if (ASSETS.water && ASSETS.water.complete && ASSETS.water.naturalWidth > 0) {
                         ctx.drawImage(ASSETS.water, px, py, this.tileSize, this.tileSize);
                     } else {
                         ctx.fillStyle = '#1a8cff'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
@@ -140,7 +138,7 @@ class CityMap {
                     let isH = (y % 3 === 0);
                     let img = isH ? ASSETS.bridgeH : ASSETS.bridgeV;
 
-                    if (img && img.complete && img.naturalWidth) {
+                    if (img && img.complete && img.naturalWidth > 0) {
                         ctx.drawImage(img, px, py, this.tileSize, this.tileSize);
                     } else {
                         ctx.fillStyle = '#444'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
@@ -149,7 +147,7 @@ class CityMap {
                 else if (type === 4) { 
                     let parkIdx = (x * 11 + y * 17) % ASSETS.parks.length;
                     let img = ASSETS.parks[parkIdx];
-                    if (img && img.complete && img.naturalWidth) {
+                    if (img && img.complete && img.naturalWidth > 0) {
                         ctx.drawImage(img, px, py, this.tileSize, this.tileSize);
                     } else {
                         ctx.fillStyle = '#4d8a2a'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
