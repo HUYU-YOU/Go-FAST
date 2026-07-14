@@ -91,10 +91,12 @@ function startGame(carType) {
 
 function finishStartGame(carType) {
     map = new CityMap(); 
+    
+    // Position initiale absolue
     let px = map.bankSpawn.x * map.tileSize + map.tileSize / 2; 
     let py = map.bankSpawn.y * map.tileSize + map.tileSize / 2;
     
-    // --- CORRECTION ABSOLUE DU BUG DE CHARGEMENT INFINI ---
+    // Recherche de route sécurisée
     let searchRadius = 1;
     let foundRoad = false;
     while(searchRadius <= 10 && !foundRoad) {
@@ -115,12 +117,15 @@ function finishStartGame(carType) {
         searchRadius++;
     }
 
+    // Assure la création du joueur !
     player = new Player(px, py, carType);
     player.keysCollected = 0;
     wantedLevel = 0; 
     
     civilians = []; police = []; helicopters = []; pedestrians = []; particles = []; bullets = [];
-    camera = { x: 0, y: 0 }; invulnerabilityTimer = 0; gameState = 'playing';
+    camera = { x: player.x - canvas.width / 2, y: player.y - canvas.height / 2 }; 
+    invulnerabilityTimer = 0; 
+    gameState = 'playing';
     
     showScreen(null); 
     document.getElementById('bottom-hud').style.display = 'flex';
@@ -222,209 +227,236 @@ function drawMinimap() {
 }
 
 function update() {
-    if(escCooldown > 0) escCooldown--;
-    if(keys.esc && escCooldown <= 0) { escCooldown = 20; if(gameState === 'playing') { gameState = 'paused'; showScreen('pause-screen'); radioStations.forEach(r=>r.audio.volume=0); return; } }
-    if(gameState !== 'playing') return;
-    
-    if(invulnerabilityTimer > 0) invulnerabilityTimer--;
-    if(radioCooldown > 0) radioCooldown--;
+    try {
+        if(escCooldown > 0) escCooldown--;
+        if(typeof keys !== 'undefined' && keys.esc && escCooldown <= 0) { escCooldown = 20; if(gameState === 'playing') { gameState = 'paused'; showScreen('pause-screen'); radioStations.forEach(r=>r.audio.volume=0); return; } }
+        if(gameState !== 'playing') return;
+        if(typeof keys === 'undefined') return; // Securite max
+        
+        if(invulnerabilityTimer > 0) invulnerabilityTimer--;
+        if(radioCooldown > 0) radioCooldown--;
 
-    if(keys.enter && radioCooldown <= 0) {
-        radioCooldown = 22; currentRadioIndex = (currentRadioIndex + 1) % radioStations.length; applyVolumeSettings();
-        document.getElementById('radio-display').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
-    }
-
-    if (keys.up || keys.down || keys.left || keys.right || keys.nitro) player.fuel -= keys.nitro ? player.fuelDrainRate * 1.8 : player.fuelDrainRate;
-    if(player.fuel <= 0) { player.fuel = 0; player.baseMaxSpeed = 0; }
-
-    let currentTile = map.getTileTypeAt(player.x, player.y);
-    
-    player.underHeliSpotlight = false;
-    for(let h of helicopters) {
-        h.updateAI(player);
-        if(Math.hypot(player.x - h.x, player.y - h.y) < 200) player.underHeliSpotlight = true;
-    }
-    document.getElementById('heli-warning').style.display = player.underHeliSpotlight ? 'block' : 'none';
-
-    player.updatePlayer(keys, currentTile); spawnEntities();
-    
-    for(let c of civilians) c.updateAI(map); 
-    for(let p of police) p.updateAI(player, map, bullets); 
-    for(let ped of pedestrians) ped.update(map);
-    for(let pt of particles) pt.update();
-    for(let b of bullets) b.update();
-
-    civilians = civilians.filter(c => Math.abs(c.x - player.x) < 2200 && Math.abs(c.y - player.y) < 2200);
-    police = police.filter(p => !p.dead && Math.abs(p.x - player.x) < 2200 && Math.abs(p.y - player.y) < 2200);
-    pedestrians = pedestrians.filter(p => p.alive && Math.abs(p.x - player.x) < 1800);
-    particles = particles.filter(p => p.life > 0);
-    bullets = bullets.filter(b => b.life > 0);
-
-    if (currentTile === 2) { gameState = 'gameover_drown'; return; }
-    
-    let nextTileX = map.getTileTypeAt(player.x + player.vx * 1.5, player.y);
-    let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 1.5);
-    if([0, 5, 6, 8].includes(nextTileX)) { player.vx = 0; } 
-    if([0, 5, 6, 8].includes(nextTileY)) { player.vy = 0; }
-
-    let pBounds = player.getBounds();
-    for(let f of map.fuels) { if(!f.collected && Math.hypot(player.x - f.x, player.y - f.y) < 50) { f.collected = true; player.fuel = Math.min(100, player.fuel + f.amount); } }
-    
-    for(let w of map.wrenches) {
-        if(!w.collected && Math.hypot(player.x - w.x, player.y - w.y) < 40) {
-            w.collected = true;
-            player.health = Math.min(player.maxHealth, player.health + 1);
-            for(let i=0; i<15; i++) particles.push(new Particle(player.x, player.y, '#00ffcc'));
+        if(keys.enter && radioCooldown <= 0) {
+            radioCooldown = 22; currentRadioIndex = (currentRadioIndex + 1) % radioStations.length; applyVolumeSettings();
+            document.getElementById('radio-display').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
         }
-    }
 
-    for(let k of map.keys) { 
-        if(!k.collected && Math.hypot(player.x - k.x, player.y - k.y) < 50) { 
-            k.collected = true; 
-            player.keysCollected++; 
-            wantedLevel = player.keysCollected; 
-        } 
-    }
+        if (keys.up || keys.down || keys.left || keys.right || keys.nitro) player.fuel -= keys.nitro ? player.fuelDrainRate * 1.8 : player.fuelDrainRate;
+        if(player.fuel <= 0) { player.fuel = 0; player.baseMaxSpeed = 0; }
 
-    for(let ped of pedestrians) {
-        if(ped.alive && Math.hypot(player.x - ped.x, player.y - ped.y) < 25) {
-            ped.alive = false; 
-            wantedLevel = Math.max(wantedLevel, 1); 
-            for(let i=0; i<15; i++) particles.push(new Particle(ped.x, ped.y, '#cc0000'));
+        let currentTile = map.getTileTypeAt(player.x, player.y);
+        
+        player.underHeliSpotlight = false;
+        for(let h of helicopters) {
+            h.updateAI(player);
+            if(Math.hypot(player.x - h.x, player.y - h.y) < 200) player.underHeliSpotlight = true;
         }
-    }
+        let w = document.getElementById('heli-warning');
+        if(w) w.style.display = player.underHeliSpotlight ? 'block' : 'none';
 
-    for(let b of bullets) {
-        if (rectIntersect(pBounds, b.getBounds())) {
-            b.life = 0;
-            if (invulnerabilityTimer <= 0) {
-                player.health -= 2; 
-                invulnerabilityTimer = 42; player.speed *= 0.5; 
-                for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#ff3300'));
-                if(player.health <= 0) gameState = 'gameover_crash';
+        player.updatePlayer(keys, currentTile); spawnEntities();
+        
+        for(let c of civilians) c.updateAI(map); 
+        for(let p of police) p.updateAI(player, map, bullets); 
+        for(let ped of pedestrians) ped.update(map);
+        for(let pt of particles) pt.update();
+        for(let b of bullets) b.update();
+
+        civilians = civilians.filter(c => Math.abs(c.x - player.x) < 2200 && Math.abs(c.y - player.y) < 2200);
+        police = police.filter(p => !p.dead && Math.abs(p.x - player.x) < 2200 && Math.abs(p.y - player.y) < 2200);
+        pedestrians = pedestrians.filter(p => p.alive && Math.abs(p.x - player.x) < 1800);
+        particles = particles.filter(p => p.life > 0);
+        bullets = bullets.filter(b => b.life > 0);
+
+        if (currentTile === 2) { gameState = 'gameover_drown'; return; }
+        
+        let nextTileX = map.getTileTypeAt(player.x + player.vx * 1.5, player.y);
+        let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 1.5);
+        if([0, 5, 6, 8].includes(nextTileX)) { player.vx = 0; } 
+        if([0, 5, 6, 8].includes(nextTileY)) { player.vy = 0; }
+
+        let pBounds = player.getBounds();
+        for(let f of map.fuels) { if(!f.collected && Math.hypot(player.x - f.x, player.y - f.y) < 50) { f.collected = true; player.fuel = Math.min(100, player.fuel + f.amount); } }
+        
+        for(let w of map.wrenches) {
+            if(!w.collected && Math.hypot(player.x - w.x, player.y - w.y) < 40) {
+                w.collected = true;
+                player.health = Math.min(player.maxHealth, player.health + 1);
+                for(let i=0; i<15; i++) particles.push(new Particle(player.x, player.y, '#00ffcc'));
             }
         }
-    }
 
-    for(let c of civilians) {
-        if(rectIntersect(pBounds, c.getBounds())) {
-            wantedLevel = Math.max(wantedLevel, 1); 
-
-            let dx = player.x - c.x; let dy = player.y - c.y; let dist = Math.hypot(dx, dy);
-            if (dist > 0) { 
-                player.vx += (dx / dist) * 2; player.vy += (dy / dist) * 2; 
-                let pushX = -(dx / dist) * 2; let pushY = -(dy / dist) * 2;
-                let cNextT = map.getTileTypeAt(c.x + pushX, c.y + pushY);
-                if (![0, 5, 6, 8, 2].includes(cNextT)) { c.vx += pushX; c.vy += pushY; }
-            }
-            if (invulnerabilityTimer <= 0) {
-                player.health--; invulnerabilityTimer = 42; player.speed *= 0.5; 
-                for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#555'));
-                if(player.health <= 0) gameState = 'gameover_crash';
-            }
-        }
-    }
-
-    let underArrest = false;
-    for(let p of police) {
-        if (wantedLevel === 2 && Math.hypot(player.x - p.x, player.y - p.y) < 300 && Math.random() < 0.01) {
-            alertOppositeCop();
+        for(let k of map.keys) { 
+            if(!k.collected && Math.hypot(player.x - k.x, player.y - k.y) < 50) { 
+                k.collected = true; 
+                player.keysCollected++; 
+                wantedLevel = player.keysCollected; 
+            } 
         }
 
-        if(rectIntersect(pBounds, p.getBounds())) {
-            if(p.type === 3) {
-                player.health = 0;
-                gameState = 'gameover_crash';
-                break;
+        for(let ped of pedestrians) {
+            if(ped.alive && Math.hypot(player.x - ped.x, player.y - ped.y) < 25) {
+                ped.alive = false; 
+                wantedLevel = Math.max(wantedLevel, 1); 
+                for(let i=0; i<15; i++) particles.push(new Particle(ped.x, ped.y, '#cc0000'));
             }
+        }
 
-            let dx = player.x - p.x; let dy = player.y - p.y; let dist = Math.hypot(dx, dy);
-            if (dist > 0) {
-                player.vx += (dx / dist) * 3; player.vy += (dy / dist) * 3;
-                let pNextT = map.getTileTypeAt(p.x - (dx/dist)*3, p.y - (dy/dist)*3);
-                if(![0, 5, 6, 7, 2].includes(pNextT)) { 
-                    p.vx -= (dx / dist) * 3; p.vy -= (dy / dist) * 3;
+        for(let b of bullets) {
+            if (rectIntersect(pBounds, b.getBounds())) {
+                b.life = 0;
+                if (invulnerabilityTimer <= 0) {
+                    player.health -= 2; 
+                    invulnerabilityTimer = 42; player.speed *= 0.5; 
+                    for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#ff3300'));
+                    if(player.health <= 0) gameState = 'gameover_crash';
                 }
             }
-            player.speed *= 0.70; p.speed *= 0.50;
-
-            if (invulnerabilityTimer <= 0) {
-                player.health--; invulnerabilityTimer = 42; 
-                for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#555'));
-                if(player.health <= 0) gameState = 'gameover_crash';
-            }
-            if(Math.abs(player.speed) < 2.0) underArrest = true; 
         }
+
+        for(let c of civilians) {
+            if(rectIntersect(pBounds, c.getBounds())) {
+                wantedLevel = Math.max(wantedLevel, 1); 
+
+                let dx = player.x - c.x; let dy = player.y - c.y; let dist = Math.hypot(dx, dy);
+                if (dist > 0) { 
+                    player.vx += (dx / dist) * 2; player.vy += (dy / dist) * 2; 
+                    let pushX = -(dx / dist) * 2; let pushY = -(dy / dist) * 2;
+                    let cNextT = map.getTileTypeAt(c.x + pushX, c.y + pushY);
+                    if (![0, 5, 6, 8, 2].includes(cNextT)) { c.vx += pushX; c.vy += pushY; }
+                }
+                if (invulnerabilityTimer <= 0) {
+                    player.health--; invulnerabilityTimer = 42; player.speed *= 0.5; 
+                    for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#555'));
+                    if(player.health <= 0) gameState = 'gameover_crash';
+                }
+            }
+        }
+
+        let underArrest = false;
+        for(let p of police) {
+            if (wantedLevel === 2 && Math.hypot(player.x - p.x, player.y - p.y) < 300 && Math.random() < 0.01) {
+                alertOppositeCop();
+            }
+
+            if(rectIntersect(pBounds, p.getBounds())) {
+                if(p.type === 3) {
+                    player.health = 0;
+                    gameState = 'gameover_crash';
+                    break;
+                }
+
+                let dx = player.x - p.x; let dy = player.y - p.y; let dist = Math.hypot(dx, dy);
+                if (dist > 0) {
+                    player.vx += (dx / dist) * 3; player.vy += (dy / dist) * 3;
+                    let pNextT = map.getTileTypeAt(p.x - (dx/dist)*3, p.y - (dy/dist)*3);
+                    if(![0, 5, 6, 7, 2].includes(pNextT)) { 
+                        p.vx -= (dx / dist) * 3; p.vy -= (dy / dist) * 3;
+                    }
+                }
+                player.speed *= 0.70; p.speed *= 0.50;
+
+                if (invulnerabilityTimer <= 0) {
+                    player.health--; invulnerabilityTimer = 42; 
+                    for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#555'));
+                    if(player.health <= 0) gameState = 'gameover_crash';
+                }
+                if(Math.abs(player.speed) < 2.0) underArrest = true; 
+            }
+        }
+        
+        let aw = document.getElementById('arrest-warning');
+        if(underArrest) { 
+            player.arrestTimer++; if(aw) aw.style.display = 'block'; 
+            if(player.arrestTimer > 100) gameState = 'gameover_arrest'; 
+        } else { 
+            player.arrestTimer = Math.max(0, player.arrestTimer - 2); 
+            if(player.arrestTimer === 0 && aw) aw.style.display = 'none'; 
+        }
+
+        if(player.keysCollected >= 5) gameState = 'win';
+
+        camera.x = player.x - canvas.width / 2; camera.y = player.y - canvas.height / 2;
+        if (player.health <= 1 && Math.random() < 0.3) particles.push(new Particle(player.x, player.y, '#333'));
+
+        let healthNode = document.getElementById('health');
+        if (healthNode) healthNode.innerText = `HULL: ${player.health}/${player.maxHealth}`;
+        let fuelNode = document.getElementById('fuel');
+        if (fuelNode) fuelNode.innerText = `FUEL: ${Math.ceil(player.fuel)}%`;
+        let nitroNode = document.getElementById('nitro');
+        if (nitroNode) nitroNode.innerText = `NITRO: ${Math.ceil(player.nitro)}% [SPACE]`;
+        let cargoNode = document.getElementById('cargo');
+        if (cargoNode) cargoNode.innerText = `CARGO: ${player.keysCollected}/5`;
+        let wantedNode = document.getElementById('wanted-display');
+        if (wantedNode) wantedNode.innerText = wantedLevel > 0 ? `WANTED: ${'★'.repeat(Math.min(5, wantedLevel))}` : `WANTED: CHILL MODE 😎`;
+
+    } catch (e) {
+        console.error("Erreur Update: ", e);
     }
-    
-    if(underArrest) { 
-        player.arrestTimer++; document.getElementById('arrest-warning').style.display = 'block'; 
-        if(player.arrestTimer > 100) gameState = 'gameover_arrest'; 
-    } else { 
-        player.arrestTimer = Math.max(0, player.arrestTimer - 2); 
-        if(player.arrestTimer === 0) document.getElementById('arrest-warning').style.display = 'none'; 
-    }
-
-    if(player.keysCollected >= 5) gameState = 'win';
-
-    camera.x = player.x - canvas.width / 2; camera.y = player.y - canvas.height / 2;
-    if (player.health <= 1 && Math.random() < 0.3) particles.push(new Particle(player.x, player.y, '#333'));
-
-    document.getElementById('health').innerText = `HULL: ${player.health}/${player.maxHealth}`;
-    document.getElementById('fuel').innerText = `FUEL: ${Math.ceil(player.fuel)}%`;
-    document.getElementById('nitro').innerText = `NITRO: ${Math.ceil(player.nitro)}% [SPACE]`;
-    document.getElementById('cargo').innerText = `CARGO: ${player.keysCollected}/5`;
-    document.getElementById('wanted-display').innerText = wantedLevel > 0 ? `WANTED: ${'★'.repeat(Math.min(5, wantedLevel))}` : `WANTED: CHILL MODE 😎`;
 }
 
 function draw() {
-    if(gameState === 'playing') {
-        ctx.clearRect(0, 0, canvas.width, canvas.height); 
-        map.draw(ctx, camera.x, camera.y);
-        for(let pt of particles) pt.draw(ctx, camera.x, camera.y);
-        for(let ped of pedestrians) ped.draw(ctx, camera.x, camera.y);
-        for(let c of civilians) c.draw(ctx, camera.x, camera.y); 
-        for(let p of police) p.draw(ctx, camera.x, camera.y);
-        for(let b of bullets) b.draw(ctx, camera.x, camera.y);
-        if(invulnerabilityTimer % 10 < 5) player.draw(ctx, camera.x, camera.y);
-        for(let h of helicopters) h.draw(ctx, camera.x, camera.y);
+    try {
+        if(gameState === 'playing') {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            map.draw(ctx, camera.x, camera.y);
+            for(let pt of particles) pt.draw(ctx, camera.x, camera.y);
+            for(let ped of pedestrians) ped.draw(ctx, camera.x, camera.y);
+            for(let c of civilians) c.draw(ctx, camera.x, camera.y); 
+            for(let p of police) p.draw(ctx, camera.x, camera.y);
+            for(let b of bullets) b.draw(ctx, camera.x, camera.y);
+            
+            if(invulnerabilityTimer === undefined || invulnerabilityTimer % 10 < 5) {
+                player.draw(ctx, camera.x, camera.y);
+            }
+            
+            for(let h of helicopters) h.draw(ctx, camera.x, camera.y);
+            
+            drawMinimap();
+        }
         
-        drawMinimap();
-    }
-    
-    if(gameState.startsWith('gameover') || gameState === 'win') {
-        showScreen('message-screen'); 
-        radioStations.forEach(r=>r.audio.volume=0);
-        
-        let title = document.getElementById('msg-title'); 
-        let sub = document.getElementById('msg-sub');
-        let msgScreen = document.getElementById('message-screen');
-        
-        msgScreen.style.backgroundSize = "cover";
-        msgScreen.style.backgroundPosition = "center";
-        msgScreen.style.backgroundColor = "rgba(0,0,0,0.9)"; 
-        
-        title.style.textShadow = "3px 3px 6px black";
-        sub.style.textShadow = "2px 2px 4px black";
-        sub.style.fontSize = "30px";
-        sub.style.fontWeight = "bold";
+        if(gameState.startsWith('gameover') || gameState === 'win') {
+            showScreen('message-screen'); 
+            radioStations.forEach(r=>r.audio.volume=0);
+            
+            let title = document.getElementById('msg-title'); 
+            let sub = document.getElementById('msg-sub');
+            let msgScreen = document.getElementById('message-screen');
+            
+            if(msgScreen) {
+                msgScreen.style.backgroundSize = "cover";
+                msgScreen.style.backgroundPosition = "center";
+                msgScreen.style.backgroundColor = "rgba(0,0,0,0.9)"; 
+            }
+            
+            if(title && sub) {
+                title.style.textShadow = "3px 3px 6px black";
+                sub.style.textShadow = "2px 2px 4px black";
+                sub.style.fontSize = "30px";
+                sub.style.fontWeight = "bold";
 
-        if(gameState === 'gameover_crash') { 
-            title.innerText = ""; sub.innerText = "Apprend a conduire"; sub.style.color = "#ff1a1a";
-            msgScreen.style.backgroundImage = "url('img/broken_end.png')";
-        } 
-        else if (gameState === 'gameover_arrest') { 
-            title.innerText = ""; sub.innerText = "Tu t'es chopper"; sub.style.color = "#1a1aff";
-            msgScreen.style.backgroundImage = "url('img/police_end.png')";
-        } 
-        else if (gameState === 'gameover_drown') { 
-            title.innerText = ""; sub.innerText = "T'es tombe a l'eau"; sub.style.color = "#1a8cff";
-            msgScreen.style.backgroundImage = "url('img/water_end.png')";
+                if(gameState === 'gameover_crash') { 
+                    title.innerText = ""; sub.innerText = "Apprend a conduire"; sub.style.color = "#ff1a1a";
+                    msgScreen.style.backgroundImage = "url('img/broken_end.png')";
+                } 
+                else if (gameState === 'gameover_arrest') { 
+                    title.innerText = ""; sub.innerText = "Tu t'es chopper"; sub.style.color = "#1a1aff";
+                    msgScreen.style.backgroundImage = "url('img/police_end.png')";
+                } 
+                else if (gameState === 'gameover_drown') { 
+                    title.innerText = ""; sub.innerText = "T'es tombe a l'eau"; sub.style.color = "#1a8cff";
+                    msgScreen.style.backgroundImage = "url('img/water_end.png')";
+                }
+                else if (gameState === 'win') { 
+                    title.innerText = "GO-FAST RÉUSSI !"; title.style.color = "#00ff66"; sub.innerText = ""; 
+                    msgScreen.style.backgroundImage = "url('img/win_end.png')";
+                }
+            }
         }
-        else if (gameState === 'win') { 
-            title.innerText = "GO-FAST RÉUSSI !"; title.style.color = "#00ff66"; sub.innerText = ""; 
-            msgScreen.style.backgroundImage = "url('img/win_end.png')";
-        }
+    } catch (e) {
+        console.error("Erreur Draw: ", e);
+        ctx.fillStyle = "red"; ctx.font = "20px Courier";
+        ctx.fillText("ERREUR FATALE (F12 pour voir la console)", 20, 100);
     }
     requestAnimationFrame(draw);
 }
