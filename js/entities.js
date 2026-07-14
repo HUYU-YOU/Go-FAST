@@ -6,11 +6,9 @@ const ASSETS = {
     van: new Image(), tank: new Image(), helico: new Image()
 };
 
-// Fonction utilitaire pour charger en silence sans faire planter
 function loadImg(path) {
     let img = new Image();
     img.src = path;
-    img.onerror = () => { console.warn("Image manquante: " + path); };
     return img;
 }
 
@@ -149,7 +147,7 @@ class Civilian extends Car {
     updateAI(mapObj) {
         let nextX = this.x + this.vx * 2; let nextY = this.y + this.vy * 2;
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
-        if(nextTile === 0 || nextTile === 2 || nextTile === 5 || nextTile === 6 || nextTile === 7 || nextTile === 8) {
+        if([0, 2, 5, 6, 7, 8].includes(nextTile)) {
             this.angle += Math.PI/2;
             this.vx = Math.cos(this.angle) * this.maxSpeed;
             this.vy = Math.sin(this.angle) * this.maxSpeed;
@@ -192,7 +190,7 @@ class Police extends Car {
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
 
         let targetAngle;
-        if (nextTile === 0 || nextTile === 5 || nextTile === 6 || nextTile === 7) {
+        if ([0, 5, 6, 7].includes(nextTile)) {
             targetAngle = this.angle + (Math.PI / 1.5); this.speed *= 0.8;
         } else {
             targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
@@ -209,8 +207,8 @@ class Police extends Car {
         let currentTileX = mapObj.getTileTypeAt(this.x + this.vx, this.y);
         let currentTileY = mapObj.getTileTypeAt(this.x, this.y + this.vy);
         
-        if (currentTileX === 0 || currentTileX === 5 || currentTileX === 6 || currentTileX === 7) { this.vx = 0; this.speed *= 0.8; }
-        if (currentTileY === 0 || currentTileY === 5 || currentTileY === 6 || currentTileY === 7) { this.vy = 0; this.speed *= 0.8; }
+        if ([0, 5, 6, 7].includes(currentTileX)) { this.vx = 0; this.speed *= 0.8; }
+        if ([0, 5, 6, 7].includes(currentTileY)) { this.vy = 0; this.speed *= 0.8; }
 
         super.update();
 
