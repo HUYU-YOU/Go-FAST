@@ -8,17 +8,21 @@ body {
     position: relative; width: 1000px; height: 600px;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.8); border: 2px solid #222;
 }
+
+/* On s'assure que le slider ne bloque pas les clics avec pointer-events: none */
 #bg-slider {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-    z-index: 4; /* <-- Changé à 4 pour être au-dessus du canvas noir */
+    z-index: 4; 
     background-size: cover; background-position: center;
-    transition: background-image 1.5s ease-in-out; pointer-events: none; display: block;
+    transition: background-image 1.5s ease-in-out; 
+    pointer-events: none; display: block;
 }
 canvas { display: block; background-color: #1a1a20; position: relative; z-index: 2; }
 
+/* Audio block corrigé pour ne pas déborder */
 #global-audio-controls {
     position: absolute; top: 20px; left: 20px; z-index: 100;
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 10px; width: fit-content;
     background: rgba(15, 15, 25, 0.8); padding: 5px 10px; border-radius: 6px; border: 1px solid #00ffcc;
 }
 #global-audio-controls button {
@@ -54,7 +58,7 @@ canvas { display: block; background-color: #1a1a20; position: relative; z-index:
     background: rgba(10, 10, 15, 0.96); display: flex; flex-direction: column;
     justify-content: center; align-items: center; z-index: 10;
 }
-.screen.with-bg { background: rgba(10, 10, 15, 0.4); } /* Transparence pour voir les images */
+.screen.with-bg { background: rgba(10, 10, 15, 0.4); } 
 .screen-content {
     position: relative; z-index: 15; display: flex; flex-direction: column;
     align-items: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
