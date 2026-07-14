@@ -130,7 +130,9 @@ class Player extends Car {
             ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
             ctx.rotate(-Math.PI / 2);
         } else {
+            // Sécurité : Si l'image est introuvable, on dessine un rectangle de couleur avec des vitres
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
+            ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
         }
         ctx.restore();
     }
@@ -164,6 +166,7 @@ class Civilian extends Car {
             ctx.rotate(-Math.PI / 2);
         } else {
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
+            ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
         }
         ctx.restore();
     }
@@ -240,6 +243,8 @@ class Police extends Car {
         } else {
             this.color = (this.type === 3) ? '#1e4620' : '#1e3ee6';
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
+            ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
+            if(this.type === 3) { ctx.fillStyle = '#333'; ctx.fillRect(0, -4, 40, 8); }
         }
         
         if (this.type === 1 || this.type === 2) {
