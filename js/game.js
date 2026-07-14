@@ -1,11 +1,10 @@
-// js/game.js
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 let map, player, civilians, police, helicopters, pedestrians, particles, bullets;
 let gameState = 'menu', camera, invulnerabilityTimer;
 let escCooldown = 0;
-let wantedLevel = 0; // MODE CHILL PAR DEFAUT !
+let wantedLevel = 0;
 
 const backgrounds = [
     'url("img/background1.png")', 'url("img/background2.png")', 'url("img/background3.png")',
@@ -33,9 +32,9 @@ function stopBgSlider() {
 let globalVolume = 0.5, isMuted = false, audioInitialized = false, radioCooldown = 0, currentRadioIndex = 0;
 const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
-    { name: "MAMACITA.fm", audio: new Audio('audio/MAMACITA.fm.mp3') },
-    { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
-    { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') }
+    { name: "MAMACITA.fm", audio: new Audio('audio/MAMACITA.fm.mp3') },
+    { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
+    { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') }
     { name: "NightCarCrash", audio: new Audio('audio/NightCarCrash.mp3') },
     { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
     { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') },
@@ -123,19 +122,12 @@ function spawnEntities() {
     }
     
     if (wantedLevel > 0) {
-        // GESTION DIFFICULTE ETOILES : 
-        // 1 étoile = 1 cop
-        // 2 étoiles = 3 cops, alertes dans le sens opposé
-        // 3 étoiles = 5 cops, spawn rues parallèles + hélico
-        // 4 étoiles = 7 cops + tanks
-        // 5 étoiles = 9 cops + plus de tanks
         let maxCops = (wantedLevel === 1) ? 1 : ((wantedLevel === 2) ? 3 : (wantedLevel === 3 ? 5 : wantedLevel * 2 - 1));
 
         if(police.length < maxCops) {
             let px, py;
             let spawnFound = false;
             
-            // Si 3 étoiles, tentative de spawn rues parallèles
             if(wantedLevel >= 3 && Math.random() < 0.5) {
                 px = player.x + (Math.random() > 0.5 ? 500 : -500); py = player.y + (Math.random() > 0.5 ? 500 : -500);
             } else {
@@ -155,8 +147,8 @@ function spawnEntities() {
             if(spawnFound || map.getTileTypeAt(px, py) === 1) {
                 let type = 1;
                 if (wantedLevel === 3 && Math.random() < 0.5) type = 2;
-                if (wantedLevel === 4) type = (Math.random() < 0.3) ? 3 : 2; // Tank chance at 4 stars
-                if (wantedLevel >= 5) type = (Math.random() < 0.5) ? 3 : 2; // More tanks at 5 stars
+                if (wantedLevel === 4) type = (Math.random() < 0.3) ? 3 : 2; 
+                if (wantedLevel >= 5) type = (Math.random() < 0.5) ? 3 : 2; 
                 police.push(new Police(px, py, type, wantedLevel));
             }
         }
@@ -166,7 +158,6 @@ function spawnEntities() {
     }
 }
 
-// Fonction 2 Etoiles : Cop t'a vu = alerte à un autre dans le sens inverse
 function alertOppositeCop() {
     if(wantedLevel >= 2) {
         let px = player.x + (player.vx > 0 ? 800 : -800); 
@@ -193,8 +184,8 @@ function drawMinimap() {
         for(let x=0; x<map.cols; x++) {
             if(map.grid[y][x] === 2) drawDot(x * map.tileSize, y * map.tileSize, '#1a8cff', map.tileSize * scale);
             if(map.grid[y][x] === 5) drawDot(x * map.tileSize, y * map.tileSize, '#cccccc', map.tileSize * scale); 
-            if(map.grid[y][x] === 7) drawDot(x * map.tileSize, y * map.tileSize, '#00ffcc', map.tileSize * scale); // Garage cyan
-            if(map.grid[y][x] === 8) drawDot(x * map.tileSize, y * map.tileSize, '#1a1aff', map.tileSize * scale); // Police station bleu
+            if(map.grid[y][x] === 7) drawDot(x * map.tileSize, y * map.tileSize, '#00ffcc', map.tileSize * scale);
+            if(map.grid[y][x] === 8) drawDot(x * map.tileSize, y * map.tileSize, '#1a1aff', map.tileSize * scale);
         }
     }
     for(let f of map.fuels) if(!f.collected) drawDot(f.x, f.y, '#ff5500', 4);
@@ -247,7 +238,6 @@ function update() {
 
     if (currentTile === 2) { gameState = 'gameover_drown'; return; }
     
-    // Glissade murs
     let nextTileX = map.getTileTypeAt(player.x + player.vx * 1.5, player.y);
     let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 1.5);
     if([0, 5, 6, 8].includes(nextTileX)) { player.vx = 0; } 
@@ -256,7 +246,6 @@ function update() {
     let pBounds = player.getBounds();
     for(let f of map.fuels) { if(!f.collected && Math.hypot(player.x - f.x, player.y - f.y) < 50) { f.collected = true; player.fuel = Math.min(100, player.fuel + f.amount); } }
     
-    // Clefs dans Garage pour +1 HP
     for(let w of map.wrenches) {
         if(!w.collected && Math.hypot(player.x - w.x, player.y - w.y) < 40) {
             w.collected = true;
@@ -265,7 +254,6 @@ function update() {
         }
     }
 
-    // Cargos (Clefs normales)
     for(let k of map.keys) { 
         if(!k.collected && Math.hypot(player.x - k.x, player.y - k.y) < 50) { 
             k.collected = true; 
@@ -286,7 +274,7 @@ function update() {
         if (rectIntersect(pBounds, b.getBounds())) {
             b.life = 0;
             if (invulnerabilityTimer <= 0) {
-                player.health -= 2; // DEGAT DU CHAR = 2
+                player.health -= 2; 
                 invulnerabilityTimer = 42; player.speed *= 0.5; 
                 for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#ff3300'));
                 if(player.health <= 0) gameState = 'gameover_crash';
@@ -315,13 +303,11 @@ function update() {
 
     let underArrest = false;
     for(let p of police) {
-        // Alerte "Cop m'a vu" pour spawn supplémentaire au Level 2
         if (wantedLevel === 2 && Math.hypot(player.x - p.x, player.y - p.y) < 300 && Math.random() < 0.01) {
             alertOppositeCop();
         }
 
         if(rectIntersect(pBounds, p.getBounds())) {
-            // CHAR ONE SHOT CORPS A CORPS
             if(p.type === 3) {
                 player.health = 0;
                 gameState = 'gameover_crash';
