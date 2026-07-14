@@ -1,10 +1,19 @@
 const canvas = document.getElementById('gameCanvas');
+
+// --- TECHNIQUE DE DEZOOM ---
+// On augmente la résolution interne du jeu pour voir plus loin
+canvas.width = 1600; 
+canvas.height = 960;
+canvas.style.width = "1000px"; // L'affichage web reste le même
+canvas.style.height = "600px";
+
 const ctx = canvas.getContext('2d');
 
 let map, player, civilians, police, helicopters, pedestrians, particles, bullets;
 let gameState = 'menu', camera, invulnerabilityTimer;
 let escCooldown = 0;
 let wantedLevel = 0;
+let globalJSError = "";
 
 const backgrounds = [
     'url("img/background1.png")', 'url("img/background2.png")', 'url("img/background3.png")',
@@ -92,11 +101,9 @@ function startGame(carType) {
 function finishStartGame(carType) {
     map = new CityMap(); 
     
-    // Position initiale absolue
     let px = map.bankSpawn.x * map.tileSize + map.tileSize / 2; 
     let py = map.bankSpawn.y * map.tileSize + map.tileSize / 2;
     
-    // Recherche de route sécurisée
     let searchRadius = 1;
     let foundRoad = false;
     while(searchRadius <= 10 && !foundRoad) {
@@ -117,13 +124,12 @@ function finishStartGame(carType) {
         searchRadius++;
     }
 
-    // Assure la création du joueur !
     player = new Player(px, py, carType);
     player.keysCollected = 0;
     wantedLevel = 0; 
     
     civilians = []; police = []; helicopters = []; pedestrians = []; particles = []; bullets = [];
-    camera = { x: player.x - canvas.width / 2, y: player.y - canvas.height / 2 }; 
+    camera = { x: 0, y: 0 }; 
     invulnerabilityTimer = 0; 
     gameState = 'playing';
     
@@ -197,10 +203,10 @@ function alertOppositeCop() {
 }
 
 function drawMinimap() {
-    let mmSize = 160; let mmX = 20; let mmY = 70; 
+    let mmSize = 250; let mmX = 30; let mmY = 105; 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(mmX, mmY, mmSize, mmSize);
-    ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 2; ctx.strokeRect(mmX, mmY, mmSize, mmSize);
-    let viewRadius = 4000; let scale = mmSize / (viewRadius * 2);
+    ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 3; ctx.strokeRect(mmX, mmY, mmSize, mmSize);
+    let viewRadius = 6000; let scale = mmSize / (viewRadius * 2);
 
     function drawDot(worldX, worldY, color, size) {
         let dx = worldX - player.x; let dy = worldY - player.y;
@@ -217,13 +223,13 @@ function drawMinimap() {
             if(map.grid[y][x] === 8) drawDot(x * map.tileSize, y * map.tileSize, '#1a1aff', map.tileSize * scale);
         }
     }
-    for(let f of map.fuels) if(!f.collected) drawDot(f.x, f.y, '#ff5500', 4);
-    for(let k of map.keys) if(!k.collected) drawDot(k.x, k.y, '#ffd700', 6);
+    for(let f of map.fuels) if(!f.collected) drawDot(f.x, f.y, '#ff5500', 6);
+    for(let k of map.keys) if(!k.collected) drawDot(k.x, k.y, '#ffd700', 8);
     
-    for(let p of police) drawDot(p.x, p.y, 'red', 4);
-    for(let h of helicopters) drawDot(h.x, h.y, 'magenta', 5);
+    for(let p of police) drawDot(p.x, p.y, 'red', 6);
+    for(let h of helicopters) drawDot(h.x, h.y, 'magenta', 7);
 
-    ctx.fillStyle = '#00ffcc'; ctx.beginPath(); ctx.arc(mmX + mmSize/2, mmY + mmSize/2, 4, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#00ffcc'; ctx.beginPath(); ctx.arc(mmX + mmSize/2, mmY + mmSize/2, 6, 0, Math.PI*2); ctx.fill();
 }
 
 function update() {
@@ -231,7 +237,7 @@ function update() {
         if(escCooldown > 0) escCooldown--;
         if(typeof keys !== 'undefined' && keys.esc && escCooldown <= 0) { escCooldown = 20; if(gameState === 'playing') { gameState = 'paused'; showScreen('pause-screen'); radioStations.forEach(r=>r.audio.volume=0); return; } }
         if(gameState !== 'playing') return;
-        if(typeof keys === 'undefined') return; // Securite max
+        if(typeof keys === 'undefined') return;
         
         if(invulnerabilityTimer > 0) invulnerabilityTimer--;
         if(radioCooldown > 0) radioCooldown--;
@@ -455,7 +461,7 @@ function draw() {
         }
     } catch (e) {
         console.error("Erreur Draw: ", e);
-        ctx.fillStyle = "red"; ctx.font = "20px Courier";
+        ctx.fillStyle = "red"; ctx.font = "24px Courier";
         ctx.fillText("ERREUR FATALE (F12 pour voir la console)", 20, 100);
     }
     requestAnimationFrame(draw);
