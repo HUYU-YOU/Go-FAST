@@ -6,7 +6,7 @@ class CityMap {
         this.width = this.cols * this.tileSize;
         this.height = this.rows * this.tileSize;
         this.grid = []; this.keys = []; this.fuels = []; this.wrenches = [];
-        this.bankSpawn = {x: 20, y: 20}; // Fallback très sécurisé
+        this.bankSpawn = {x: 20, y: 20}; 
         this.generateMap(); this.placeInteractables();
     }
 
@@ -135,8 +135,13 @@ class CityMap {
                     }
                 }
                 else if (type === 3) { 
+                    let isV = (x % 3 === 0);
                     let isH = (y % 3 === 0);
-                    let img = isH ? ASSETS.bridgeH : ASSETS.bridgeV;
+                    let img = null;
+
+                    if (isV && isH) img = ASSETS.crossroadBridge; // Carrefour pont
+                    else if (isH) img = ASSETS.bridgeH;
+                    else img = ASSETS.bridgeV;
 
                     if (img && img.complete && img.naturalWidth > 0) {
                         ctx.drawImage(img, px, py, this.tileSize, this.tileSize);
