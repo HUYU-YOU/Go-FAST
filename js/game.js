@@ -30,26 +30,25 @@ function stopBgSlider() {
 }
 
 let globalVolume = 0.5, isMuted = false, audioInitialized = false, radioCooldown = 0, currentRadioIndex = 0;
+
+// LES NOMS CORRESPONDENT A 100% A TON DOSSIER AUDIO
 const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
-    { name: "MAMACITA.fm", audio: new Audio('audio/MAMACITA.fm.mp3') },
-    { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
-    { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') }
-    { name: "NightCarCrash", audio: new Audio('audio/NightCarCrash.mp3') },
-    { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
-    { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') },
-    { name: "MAMACITA.fm", audio: new Audio('audio/MAMACITA.FM.mp3') },
-    { name: "OLDSchoolFM", audio: new Audio('audio/OLDSchoolFM.mp3') },
-    { name: "TahLaBrazil.ontadit", audio: new Audio('audio/TahLaBrazil.ontadit.mp3') },
-    { name: "agressi.fm", audio: new Audio('audio/agressi.fm.mp3') },
-    { name: "cyberponk.fm", audio: new Audio('audio/cyberponk.fm.mp3') },
-    { name: "epicOUrien.radio", audio: new Audio('audio/epicUrien.radio.mp3') },
+    { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') },
+    { name: "MAMACITA.FM", audio: new Audio('audio/MAMACITA.FM.mp3') },
+    { name: "NightCarCrash", audio: new Audio('audio/NightCarCrash.mp3') },
+    { name: "OLDSchoolFM", audio: new Audio('audio/OLDSchoolFM.mp3') },
+    { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
+    { name: "TahLaBrazil", audio: new Audio('audio/TahLaBrazil.ontadit.mp3') },
+    { name: "Agressi", audio: new Audio('audio/agressi.fm.mp3') },
+    { name: "Cyberponk", audio: new Audio('audio/cyberponk.fm.mp3') },
+    { name: "EpicUrien", audio: new Audio('audio/epicUrien.radio.mp3') }
 ];
 
 window.addEventListener('click', () => {
     if(!audioInitialized) {
         audioInitialized = true; applyVolumeSettings();
-        if(gameState === 'menu' || gameState === 'car-select') menuMusic.play().catch(e=>e);
+        if(gameState === 'menu' || gameState === 'car-select') menuMusic.play().catch(e=>console.log(e));
     }
 });
 function changeGlobalVolume(val) { globalVolume = parseFloat(val); document.getElementById('volume-slider').value = val; if(!isMuted) applyVolumeSettings(); }
@@ -73,8 +72,8 @@ startBgSlider();
 
 function startGame(carType) {
     gameState = 'loading'; showScreen('loading-screen');
-    let progress = 0; let loadingBar = document.getElementById('loading-bar'); let loadingText = document.getElementById('loading-text');
-    loadingBar.style.width = '0%'; loadingText.innerText = '0%';
+    let progress = 0; let loadingBar = document.getElementById('loading-bar');
+    loadingBar.style.width = '0%';
 
     let loadInterval = setInterval(() => {
         progress += (Math.random() * 2 + 2); 
@@ -82,8 +81,8 @@ function startGame(carType) {
             progress = 100; clearInterval(loadInterval);
             setTimeout(() => { finishStartGame(carType); }, 600); 
         }
-        loadingBar.style.width = progress + '%'; loadingText.innerText = Math.floor(progress) + '%';
-    }, 200);
+        loadingBar.style.width = progress + '%';
+    }, 150);
 }
 
 function finishStartGame(carType) {
@@ -104,7 +103,7 @@ function finishStartGame(carType) {
     
     currentRadioIndex = 0; 
     if(audioInitialized) {
-        menuMusic.pause(); radioStations.forEach(r => { r.audio.loop = true; r.audio.volume = 0; r.audio.play().catch(e=>e); });
+        menuMusic.pause(); radioStations.forEach(r => { r.audio.loop = true; r.audio.volume = 0; r.audio.play().catch(e=>console.log(e)); });
         applyVolumeSettings(); document.getElementById('radio-display').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
     }
 }
