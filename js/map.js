@@ -86,9 +86,11 @@ class CityMap {
                     }
                 } 
                 else if (type === 5) { 
-                    ctx.fillStyle = '#f2e8c9'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40);
-                    ctx.fillStyle = '#d4af37'; ctx.fillRect(px + 40, py + 40, this.tileSize - 80, this.tileSize - 80);
-                    ctx.fillStyle = 'black'; ctx.font = 'bold 40px Courier'; ctx.fillText('$', px + this.tileSize/2 - 12, py + this.tileSize/2 + 15);
+                    if(ASSETS.bank && ASSETS.bank.complete && ASSETS.bank.naturalWidth) {
+                        ctx.drawImage(ASSETS.bank, px + 10, py + 10, this.tileSize - 20, this.tileSize - 20);
+                    } else {
+                        ctx.fillStyle = '#f2e8c9'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40);
+                    }
                 }
                 else if (type === 6) { 
                     if(ASSETS.chu && ASSETS.chu.complete && ASSETS.chu.naturalWidth) {
@@ -133,7 +135,6 @@ class CityMap {
                     }
                 }
                 else if (type === 3) { 
-                    // PONT: Soit horizontal (sur ligne x variable), soit vertical
                     let isH = (y % 3 === 0);
                     let img = isH ? ASSETS.bridgeH : ASSETS.bridgeV;
 
