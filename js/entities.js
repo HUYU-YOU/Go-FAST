@@ -3,14 +3,11 @@ const ASSETS = {
     gti: [], cab: [], fer: [], cops: [],
     police: new Image(), chu: new Image(), garage: new Image(),
     water: new Image(), roadH: new Image(), roadV: new Image(), crossroad: new Image(),
+    bridgeH: new Image(), bridgeV: new Image(), // Ponts
     van: new Image(), tank: new Image(), helico: new Image()
 };
 
-function loadImg(path) {
-    let img = new Image();
-    img.src = path;
-    return img;
-}
+function loadImg(path) { let img = new Image(); img.src = path; return img; }
 
 for(let i=1; i<=12; i++) ASSETS.civilians.push(loadImg(`img/car${i}.png`));
 for(let i=1; i<=13; i++) ASSETS.peds.push(loadImg(`img/pnj${i}.png`));
@@ -30,6 +27,8 @@ ASSETS.water = loadImg('img/eau.png');
 ASSETS.roadH = loadImg('img/roadhorizontale.png');
 ASSETS.roadV = loadImg('img/roadverticale.png');
 ASSETS.crossroad = loadImg('img/carrefour.png');
+ASSETS.bridgeH = loadImg('img/road_bridgehorizontale.png');
+ASSETS.bridgeV = loadImg('img/road_bridgeverticale.png');
 ASSETS.van = loadImg('img/Van.png');
 ASSETS.tank = loadImg('img/Tank.png');
 ASSETS.helico = loadImg('img/helico.png');
@@ -80,7 +79,8 @@ class Player extends Car {
         else if (carType === 'cab') { color = '#a32cc4'; maxSpeed = 26.5; maxHealth = 7; }
         else { color = '#111111'; maxSpeed = 31.8; maxHealth = 5; }
 
-        super(x, y, 42, 24, color);
+        // Tailles x2 -> 84x48
+        super(x, y, 84, 48, color);
         this.carType = carType; 
         this.baseMaxSpeed = maxSpeed; this.acceleration = 0.45; 
         this.health = maxHealth; this.maxHealth = maxHealth; this.fuelDrainRate = fuelDrain;
@@ -126,10 +126,12 @@ class Player extends Car {
         
         let img = arr[idx];
         if(img && img.complete && img.naturalWidth) {
-            ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
+            // ROTATION 90° CLOCKWISE pour corriger le skin vers le Nord
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
+            ctx.rotate(-Math.PI / 2);
         } else {
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-            ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
         }
         ctx.restore();
     }
@@ -137,7 +139,8 @@ class Player extends Car {
 
 class Civilian extends Car {
     constructor(x, y) {
-        super(x, y, 40, 24, '#555560');
+        // Tailles x2 -> 80x48
+        super(x, y, 80, 48, '#555560');
         this.maxSpeed = (4 + Math.random() * 3) * 0.7; 
         let dirs = [0, Math.PI/2, Math.PI, -Math.PI/2];
         this.angle = dirs[Math.floor(Math.random() * dirs.length)];
@@ -158,7 +161,9 @@ class Civilian extends Car {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         let img = ASSETS.civilians[this.skinIndex];
         if(img && img.complete && img.naturalWidth) {
-            ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
+            ctx.rotate(-Math.PI / 2);
         } else {
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         }
@@ -168,15 +173,17 @@ class Civilian extends Car {
 
 class Police extends Car {
     constructor(x, y, type, wantedLevel) {
-        super(x, y, 40, 24, 'blue'); this.type = type; this.spinTimer = 0; this.shootTimer = 0;
+        // Init type 1 sizes x2
+        super(x, y, 80, 48, 'blue'); this.type = type; this.spinTimer = 0; this.shootTimer = 0;
         this.dead = false; 
         this.skinIndex = Math.floor(Math.random() * 2);
         
         let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
         
+        // Tailles X2 pour tous les flics
         if (type === 1) { this.maxSpeed = 7.3 + speedBoost; this.acceleration = 0.07; this.turnSpeed = 0.025; } 
-        else if (type === 2) { this.w = 52; this.h = 30; this.maxSpeed = 5.9 + speedBoost; this.acceleration = 0.05; this.turnSpeed = 0.020; } 
-        else if (type === 3) { this.w = 65; this.h = 38; this.maxSpeed = 3.5 + speedBoost; this.acceleration = 0.02; this.turnSpeed = 0.012; }
+        else if (type === 2) { this.w = 104; this.h = 60; this.maxSpeed = 5.9 + speedBoost; this.acceleration = 0.05; this.turnSpeed = 0.020; } 
+        else if (type === 3) { this.w = 130; this.h = 76; this.maxSpeed = 3.5 + speedBoost; this.acceleration = 0.02; this.turnSpeed = 0.012; }
     }
 
     updateAI(playerObj, mapObj, bulletsArr) {
@@ -231,7 +238,9 @@ class Police extends Car {
         else if (this.type === 3) img = ASSETS.tank;
 
         if (img && img.complete && img.naturalWidth) {
-            ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
+            ctx.rotate(-Math.PI / 2);
         } else {
             this.color = (this.type === 3) ? '#1e4620' : '#1e3ee6';
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
@@ -240,9 +249,9 @@ class Police extends Car {
         if (this.type === 1 || this.type === 2) {
             let time = Date.now();
             ctx.fillStyle = (time % 300 < 150) ? 'red' : 'blue';
-            ctx.fillRect(-6, -this.h/2 + 2, 4, 4);
+            ctx.fillRect(-12, -this.h/2 + 4, 8, 8);
             ctx.fillStyle = (time % 300 < 150) ? 'blue' : 'red';
-            ctx.fillRect(2, -this.h/2 + 2, 4, 4);
+            ctx.fillRect(4, -this.h/2 + 4, 8, 8);
         }
         ctx.restore();
     }
@@ -250,7 +259,7 @@ class Police extends Car {
 
 class Helicopter {
     constructor(x, y) {
-        this.x = x; this.y = y; this.w = 50; this.h = 50; this.angle = 0; this.speed = 18;
+        this.x = x; this.y = y; this.w = 100; this.h = 100; this.angle = 0; this.speed = 18;
     }
     updateAI(playerObj) {
         let targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
@@ -265,9 +274,11 @@ class Helicopter {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         
         if (ASSETS.helico && ASSETS.helico.complete && ASSETS.helico.naturalWidth) {
-            ctx.drawImage(ASSETS.helico, -this.w/2, -this.h/2, this.w, this.h);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(ASSETS.helico, -this.h/2, -this.w/2, this.h, this.w);
+            ctx.rotate(-Math.PI / 2);
         } else {
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill();
         }
         ctx.restore();
     }
@@ -275,7 +286,8 @@ class Helicopter {
 
 class Pedestrian {
     constructor(x, y) {
-        this.x = x; this.y = y; this.w = 20; this.h = 20;
+        // PNJ 2x plus gros
+        this.x = x; this.y = y; this.w = 40; this.h = 40;
         this.vx = (Math.random() - 0.5); this.vy = (Math.random() - 0.5);
         this.alive = true;
         this.skinIndex = Math.floor(Math.random() * 13); 
@@ -295,7 +307,12 @@ class Pedestrian {
         if(!this.alive) return;
         let img = ASSETS.peds[this.skinIndex];
         if(img && img.complete && img.naturalWidth) {
-            ctx.drawImage(img, this.x - camX - this.w/2, this.y - camY - this.h/2, this.w, this.h);
+            ctx.save();
+            ctx.translate(this.x - camX, this.y - camY);
+            let angle = Math.atan2(this.vy, this.vx);
+            ctx.rotate(angle + Math.PI / 2);
+            ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
+            ctx.restore();
         } else {
             ctx.fillStyle = '#ffcc99'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, this.w/2, 0, Math.PI*2); ctx.fill();
         }
