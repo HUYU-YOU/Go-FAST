@@ -133,7 +133,15 @@ class CityMap {
                     }
                 }
                 else if (type === 3) { 
-                    ctx.fillStyle = '#444'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
+                    // PONT: Soit horizontal (sur ligne x variable), soit vertical
+                    let isH = (y % 3 === 0);
+                    let img = isH ? ASSETS.bridgeH : ASSETS.bridgeV;
+
+                    if (img && img.complete && img.naturalWidth) {
+                        ctx.drawImage(img, px, py, this.tileSize, this.tileSize);
+                    } else {
+                        ctx.fillStyle = '#444'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
+                    }
                 }
                 else if (type === 4) { 
                     let parkIdx = (x * 11 + y * 17) % ASSETS.parks.length;
