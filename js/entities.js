@@ -1,9 +1,9 @@
 const ASSETS = {
     civilians: [], peds: [], buildings: [], parks: [],
     gti: [], cab: [], fer: [], cops: [],
-    police: new Image(), chu: new Image(), garage: new Image(),
+    police: new Image(), chu: new Image(), garage: new Image(), bank: new Image(),
     water: new Image(), roadH: new Image(), roadV: new Image(), crossroad: new Image(),
-    bridgeH: new Image(), bridgeV: new Image(), // Ponts
+    bridgeH: new Image(), bridgeV: new Image(),
     van: new Image(), tank: new Image(), helico: new Image()
 };
 
@@ -23,6 +23,7 @@ for(let i=1; i<=3; i++) ASSETS.parks.push(loadImg(`img/parc${i}.png`));
 ASSETS.police = loadImg('img/police.png');
 ASSETS.chu = loadImg('img/chu.png');
 ASSETS.garage = loadImg('img/garage.png');
+ASSETS.bank = loadImg('img/bank.png');
 ASSETS.water = loadImg('img/eau.png');
 ASSETS.roadH = loadImg('img/roadhorizontale.png');
 ASSETS.roadV = loadImg('img/roadverticale.png');
@@ -79,7 +80,6 @@ class Player extends Car {
         else if (carType === 'cab') { color = '#a32cc4'; maxSpeed = 26.5; maxHealth = 7; }
         else { color = '#111111'; maxSpeed = 31.8; maxHealth = 5; }
 
-        // Tailles x2 -> 84x48
         super(x, y, 84, 48, color);
         this.carType = carType; 
         this.baseMaxSpeed = maxSpeed; this.acceleration = 0.45; 
@@ -126,7 +126,6 @@ class Player extends Car {
         
         let img = arr[idx];
         if(img && img.complete && img.naturalWidth) {
-            // ROTATION 90° CLOCKWISE pour corriger le skin vers le Nord
             ctx.rotate(Math.PI / 2);
             ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
             ctx.rotate(-Math.PI / 2);
@@ -139,7 +138,6 @@ class Player extends Car {
 
 class Civilian extends Car {
     constructor(x, y) {
-        // Tailles x2 -> 80x48
         super(x, y, 80, 48, '#555560');
         this.maxSpeed = (4 + Math.random() * 3) * 0.7; 
         let dirs = [0, Math.PI/2, Math.PI, -Math.PI/2];
@@ -173,14 +171,12 @@ class Civilian extends Car {
 
 class Police extends Car {
     constructor(x, y, type, wantedLevel) {
-        // Init type 1 sizes x2
         super(x, y, 80, 48, 'blue'); this.type = type; this.spinTimer = 0; this.shootTimer = 0;
         this.dead = false; 
         this.skinIndex = Math.floor(Math.random() * 2);
         
         let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
         
-        // Tailles X2 pour tous les flics
         if (type === 1) { this.maxSpeed = 7.3 + speedBoost; this.acceleration = 0.07; this.turnSpeed = 0.025; } 
         else if (type === 2) { this.w = 104; this.h = 60; this.maxSpeed = 5.9 + speedBoost; this.acceleration = 0.05; this.turnSpeed = 0.020; } 
         else if (type === 3) { this.w = 130; this.h = 76; this.maxSpeed = 3.5 + speedBoost; this.acceleration = 0.02; this.turnSpeed = 0.012; }
@@ -286,7 +282,6 @@ class Helicopter {
 
 class Pedestrian {
     constructor(x, y) {
-        // PNJ 2x plus gros
         this.x = x; this.y = y; this.w = 40; this.h = 40;
         this.vx = (Math.random() - 0.5); this.vy = (Math.random() - 0.5);
         this.alive = true;
