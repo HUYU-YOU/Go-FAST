@@ -1,3 +1,24 @@
+// js/entities.js
+
+// --- CHARGEMENT DE TOUS LES ASSETS (SKINS) ---
+const ASSETS = {
+    civilians: [], peds: [], buildings: [],
+    gti: [], cab: [], fer: [],
+    police: new Image(), chu: new Image(), garage: new Image()
+};
+
+for(let i=1; i<=12; i++) { let img = new Image(); img.src = `img/car${i}.png`; ASSETS.civilians.push(img); }
+for(let i=1; i<=13; i++) { let img = new Image(); img.src = `img/pnj${i}.png`; ASSETS.peds.push(img); }
+for(let i=1; i<=15; i++) { let img = new Image(); img.src = `img/bat${i}.png`; ASSETS.buildings.push(img); }
+for(let i=1; i<=5; i++) {
+    let g = new Image(); g.src = `img/GTI${i}.png`; ASSETS.gti.push(g);
+    let c = new Image(); c.src = `img/CAB${i}.png`; ASSETS.cab.push(c);
+    let f = new Image(); f.src = `img/FER${i}.png`; ASSETS.fer.push(f);
+}
+ASSETS.police.src = 'img/police.png';
+ASSETS.chu.src = 'img/chu.png';
+ASSETS.garage.src = 'img/garage.png';
+
 class Particle {
     constructor(x, y, color) {
         this.x = x; this.y = y;
@@ -20,9 +41,10 @@ class Bullet {
     }
     update() { this.x += this.vx; this.y += this.vy; this.life--; }
     draw(ctx, camX, camY) {
-        ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 6, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 3, 0, Math.PI*2); ctx.fill();
     }
-    getBounds() { return {x: this.x-4, y: this.y-4, w: 8, h: 8}; }
+    getBounds() { return {x: this.x-6, y: this.y-6, w: 12, h: 12}; }
 }
 
 class Car {
@@ -38,13 +60,14 @@ class Car {
 class Player extends Car {
     constructor(x, y, carType) {
         let color = '#222'; 
-        // VITESSE JOUEUR +30% environ
         let maxSpeed = 31.8; let maxHealth = 5; let fuelDrain = 0.04; 
-        if (carType === 'ferrari') { color = '#ffcc00'; maxSpeed = 37.0; maxHealth = 3; } 
+        if (carType === 'fer') { color = '#ffcc00'; maxSpeed = 37.0; maxHealth = 3; } 
+        else if (carType === 'cab') { color = '#a32cc4'; maxSpeed = 26.5; maxHealth = 7; } // Cabriolet
         else { color = '#111111'; maxSpeed = 31.8; maxHealth = 5; }
 
         super(x, y, 42, 24, color);
-        this.baseMaxSpeed = maxSpeed; this.acceleration = 0.45; // Accélération boostée
+        this.carType = carType; // 'gti', 'fer', 'cab'
+        this.baseMaxSpeed = maxSpeed; this.acceleration = 0.45; 
         this.health = maxHealth; this.maxHealth = maxHealth; this.fuelDrainRate = fuelDrain;
         this.fuel = 100; this.nitro = 0; this.keysCollected = 0; this.arrestTimer = 0;
         this.underHeliSpotlight = false;
@@ -80,11 +103,22 @@ class Player extends Car {
 
     draw(ctx, camX, camY) {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
-        ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-        ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
-        if (this.health <= 3) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-this.w/4, -this.h/4, 4, 0, Math.PI*2); ctx.fill(); }
-        if (this.health <= 2) { ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(this.w/3, this.h/3, 5, 0, Math.PI*2); ctx.fill(); }
-        if (this.health <= 1) { ctx.fillStyle = '#ff3300'; ctx.fillRect(-this.w/2, -2, 6, 4); }
+        
+        let arr = ASSETS[this.carType];
+        let state = Math.ceil((this.health / this.maxHealth) * 5); // 1 à 5
+        let idx = 5 - state; // 0 = Parfait, 4 = Détruit
+        idx = Math.max(0, Math.min(4, idx));
+        
+        let img = arr[idx];
+        if(img && img.complete && img.naturalWidth) {
+            ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
+        } else {
+            // Fallback si l'image n'est pas dispo
+            ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
+            ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
+            if (this.health <= 3) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-this.w/4, -this.h/4, 4, 0, Math.PI*2); ctx.fill(); }
+            if (this.health <= 1) { ctx.fillStyle = '#ff3300'; ctx.fillRect(-this.w/2, -2, 6, 4); }
+        }
         ctx.restore();
     }
 }
@@ -92,16 +126,15 @@ class Player extends Car {
 class Civilian extends Car {
     constructor(x, y) {
         super(x, y, 40, 24, '#555560');
-        // VITESSE CIVILS -30%
         this.maxSpeed = (4 + Math.random() * 3) * 0.7; 
         let dirs = [0, Math.PI/2, Math.PI, -Math.PI/2];
         this.angle = dirs[Math.floor(Math.random() * dirs.length)];
         this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed;
+        this.skinIndex = Math.floor(Math.random() * 12); // car1 à car12
     }
     updateAI(mapObj) {
         let nextX = this.x + this.vx * 2; let nextY = this.y + this.vy * 2;
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
-        // Ne rentre pas dans les bâtiments
         if(nextTile === 0 || nextTile === 2 || nextTile === 5 || nextTile === 6 || nextTile === 7 || nextTile === 8) {
             this.angle += Math.PI/2;
             this.vx = Math.cos(this.angle) * this.maxSpeed;
@@ -111,8 +144,13 @@ class Civilian extends Car {
     }
     draw(ctx, camX, camY) {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
-        ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-        ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
+        let img = ASSETS.civilians[this.skinIndex];
+        if(img && img.complete && img.naturalWidth) {
+            ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
+        } else {
+            ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
+            ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
+        }
         ctx.restore();
     }
 }
@@ -120,10 +158,8 @@ class Civilian extends Car {
 class Police extends Car {
     constructor(x, y, type, wantedLevel) {
         super(x, y, 40, 24, 'blue'); this.type = type; this.spinTimer = 0; this.shootTimer = 0;
-        this.dead = false; // Pour la mort dans l'eau
+        this.dead = false; 
         
-        // VITESSE POLICE -30% (Nerf massif). 
-        // Pas de speedboost de fou avant le 3ème cargo (wantedLevel >= 3)
         let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
         
         if (type === 1) { this.maxSpeed = 7.3 + speedBoost; this.acceleration = 0.07; this.turnSpeed = 0.025; } 
@@ -142,7 +178,6 @@ class Police extends Car {
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
 
         let targetAngle;
-        // La police galère dans les bâtiments normaux, mais traverse son commissariat (8)
         if (nextTile === 0 || nextTile === 5 || nextTile === 6 || nextTile === 7) {
             targetAngle = this.angle + (Math.PI / 1.5); this.speed *= 0.8;
         } else {
@@ -160,16 +195,12 @@ class Police extends Car {
         let currentTileX = mapObj.getTileTypeAt(this.x + this.vx, this.y);
         let currentTileY = mapObj.getTileTypeAt(this.x, this.y + this.vy);
         
-        // Bloqué par les murs
         if (currentTileX === 0 || currentTileX === 5 || currentTileX === 6 || currentTileX === 7) { this.vx = 0; this.speed *= 0.8; }
         if (currentTileY === 0 || currentTileY === 5 || currentTileY === 6 || currentTileY === 7) { this.vy = 0; this.speed *= 0.8; }
 
         super.update();
 
-        // Mort dans l'eau
-        if(mapObj.getTileTypeAt(this.x, this.y) === 2) {
-            this.dead = true;
-        }
+        if(mapObj.getTileTypeAt(this.x, this.y) === 2) { this.dead = true; }
 
         if (this.type === 3) {
             this.shootTimer--;
@@ -180,19 +211,18 @@ class Police extends Car {
         }
     }
     draw(ctx, camX, camY) {
-        this.color = Math.floor(Date.now() / 150) % 2 === 0 ? (this.type === 3 ? '#1e4620' : '#d91e1e') : (this.type === 3 ? '#0d260f' : '#1e3ee6');
+        this.color = (this.type === 3) ? '#1e4620' : '#1e3ee6';
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         ctx.fillStyle = '#050505'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
         
-        if (this.type === 2) {
+        if (this.type === 1 || this.type === 2) {
             let time = Date.now();
-            ctx.fillStyle = (time % 300 < 150) ? 'red' : '#1e3ee6';
-            ctx.fillRect(-8, -this.h/2 + 2, 6, 4);
-            ctx.fillStyle = (time % 300 < 150) ? '#1e3ee6' : 'red';
-            ctx.fillRect(2, -this.h/2 + 2, 6, 4);
+            ctx.fillStyle = (time % 300 < 150) ? 'red' : 'blue';
+            ctx.fillRect(-6, -this.h/2 + 2, 4, 4);
+            ctx.fillStyle = (time % 300 < 150) ? 'blue' : 'red';
+            ctx.fillRect(2, -this.h/2 + 2, 4, 4);
         }
-
         if(this.type === 3) { ctx.fillStyle = '#333'; ctx.fillRect(0, -4, 40, 8); }
         ctx.restore();
     }
@@ -222,11 +252,10 @@ class Helicopter {
 
 class Pedestrian {
     constructor(x, y) {
-        this.x = x; this.y = y; this.w = 14; this.h = 14;
+        this.x = x; this.y = y; this.w = 20; this.h = 20;
         this.vx = (Math.random() - 0.5); this.vy = (Math.random() - 0.5);
         this.alive = true;
-        let colors = ['#3366cc', '#cc3333', '#33cc33', '#ffffff', '#ff9900'];
-        this.shirtColor = colors[Math.floor(Math.random() * colors.length)];
+        this.skinIndex = Math.floor(Math.random() * 13); // pnj1 à pnj13
     }
     update(mapObj) {
         if(!this.alive) return;
@@ -241,7 +270,12 @@ class Pedestrian {
     }
     draw(ctx, camX, camY) {
         if(!this.alive) return;
-        ctx.fillStyle = this.shirtColor; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, this.w/2, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#ffcc99'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY - 2, 4, 0, Math.PI*2); ctx.fill(); 
+        let img = ASSETS.peds[this.skinIndex];
+        if(img && img.complete && img.naturalWidth) {
+            // Dessiner image PNJ
+            ctx.drawImage(img, this.x - camX - this.w/2, this.y - camY - this.h/2, this.w, this.h);
+        } else {
+            ctx.fillStyle = '#ffcc99'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, this.w/2, 0, Math.PI*2); ctx.fill();
+        }
     }
 }
