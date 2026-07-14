@@ -1,3 +1,4 @@
+// js/game.js
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -34,7 +35,7 @@ const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
     { name: "MAMACITA.fm", audio: new Audio('audio/MAMACITA.fm.mp3') },
     { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
-    { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') },
+    { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') }
     { name: "NightCarCrash", audio: new Audio('audio/NightCarCrash.mp3') },
     { name: "Skyrap", audio: new Audio('audio/Skyrap.mp3') },
     { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') },
@@ -93,7 +94,7 @@ function finishStartGame(carType) {
     
     player = new Player(px, py, carType);
     player.keysCollected = 0;
-    wantedLevel = 0; // Mode Chill !
+    wantedLevel = 0; 
     
     civilians = []; police = []; helicopters = []; pedestrians = []; particles = []; bullets = [];
     camera = { x: 0, y: 0 }; invulnerabilityTimer = 0; gameState = 'playing';
@@ -121,38 +122,57 @@ function spawnEntities() {
         let t = map.getTileTypeAt(px, py); if([0,4,5,6,7,8].includes(t)) pedestrians.push(new Pedestrian(px, py));
     }
     
-    // Flics n'apparaissent que si wantedLevel > 0
     if (wantedLevel > 0) {
-        let maxCops = (wantedLevel === 1) ? 1 : ((wantedLevel === 2) ? 2 : wantedLevel + 1);
+        // GESTION DIFFICULTE ETOILES : 
+        // 1 étoile = 1 cop
+        // 2 étoiles = 3 cops, alertes dans le sens opposé
+        // 3 étoiles = 5 cops, spawn rues parallèles + hélico
+        // 4 étoiles = 7 cops + tanks
+        // 5 étoiles = 9 cops + plus de tanks
+        let maxCops = (wantedLevel === 1) ? 1 : ((wantedLevel === 2) ? 3 : (wantedLevel === 3 ? 5 : wantedLevel * 2 - 1));
 
         if(police.length < maxCops) {
-            // Tente de spawner près d'un commissariat (8) sinon n'importe où sur route
             let px, py;
             let spawnFound = false;
-            // Essai de trouver un commissariat dans un rayon
-            for(let y = Math.max(0, Math.floor(player.y/map.tileSize)-10); y < Math.min(map.rows, Math.floor(player.y/map.tileSize)+10); y++) {
-                for(let x = Math.max(0, Math.floor(player.x/map.tileSize)-10); x < Math.min(map.cols, Math.floor(player.x/map.tileSize)+10); x++) {
-                    if(map.grid[y][x] === 8 && Math.random() < 0.3) {
-                        px = x * map.tileSize; py = y * map.tileSize; spawnFound = true; break;
+            
+            // Si 3 étoiles, tentative de spawn rues parallèles
+            if(wantedLevel >= 3 && Math.random() < 0.5) {
+                px = player.x + (Math.random() > 0.5 ? 500 : -500); py = player.y + (Math.random() > 0.5 ? 500 : -500);
+            } else {
+                for(let y = Math.max(0, Math.floor(player.y/map.tileSize)-10); y < Math.min(map.rows, Math.floor(player.y/map.tileSize)+10); y++) {
+                    for(let x = Math.max(0, Math.floor(player.x/map.tileSize)-10); x < Math.min(map.cols, Math.floor(player.x/map.tileSize)+10); x++) {
+                        if(map.grid[y][x] === 8 && Math.random() < 0.3) {
+                            px = x * map.tileSize; py = y * map.tileSize; spawnFound = true; break;
+                        }
                     }
+                    if(spawnFound) break;
                 }
-                if(spawnFound) break;
-            }
-            if(!spawnFound) {
-                px = player.x + (Math.random() > 0.5 ? 1200 : -1200); py = player.y + (Math.random() > 0.5 ? 900 : -900);
+                if(!spawnFound) {
+                    px = player.x + (Math.random() > 0.5 ? 1200 : -1200); py = player.y + (Math.random() > 0.5 ? 900 : -900);
+                }
             }
 
             if(spawnFound || map.getTileTypeAt(px, py) === 1) {
                 let type = 1;
                 if (wantedLevel === 3 && Math.random() < 0.5) type = 2;
-                if (wantedLevel === 4) type = 2; 
-                if (wantedLevel >= 5) type = 3; 
+                if (wantedLevel === 4) type = (Math.random() < 0.3) ? 3 : 2; // Tank chance at 4 stars
+                if (wantedLevel >= 5) type = (Math.random() < 0.5) ? 3 : 2; // More tanks at 5 stars
                 police.push(new Police(px, py, type, wantedLevel));
             }
         }
-        if (wantedLevel >= 4 && helicopters.length < 1) {
+        if (wantedLevel >= 3 && helicopters.length < 1) {
             helicopters.push(new Helicopter(player.x - 1200, player.y - 1200));
         }
+    }
+}
+
+// Fonction 2 Etoiles : Cop t'a vu = alerte à un autre dans le sens inverse
+function alertOppositeCop() {
+    if(wantedLevel >= 2) {
+        let px = player.x + (player.vx > 0 ? 800 : -800); 
+        let py = player.y + (player.vy > 0 ? 800 : -800);
+        let type = (wantedLevel >= 4) ? 3 : (wantedLevel === 3 ? 2 : 1);
+        police.push(new Police(px, py, type, wantedLevel));
     }
 }
 
@@ -204,12 +224,6 @@ function update() {
 
     let currentTile = map.getTileTypeAt(player.x, player.y);
     
-    // --- GARAGE HEAL INSTANTANÉ ---
-    if(currentTile === 7 && player.health < player.maxHealth) {
-        player.health = player.maxHealth;
-        for(let i=0; i<15; i++) particles.push(new Particle(player.x, player.y, '#00ffcc'));
-    }
-
     player.underHeliSpotlight = false;
     for(let h of helicopters) {
         h.updateAI(player);
@@ -226,7 +240,6 @@ function update() {
     for(let b of bullets) b.update();
 
     civilians = civilians.filter(c => Math.abs(c.x - player.x) < 2200 && Math.abs(c.y - player.y) < 2200);
-    // Filtrer les policiers qui sont morts dans l'eau
     police = police.filter(p => !p.dead && Math.abs(p.x - player.x) < 2200 && Math.abs(p.y - player.y) < 2200);
     pedestrians = pedestrians.filter(p => p.alive && Math.abs(p.x - player.x) < 1800);
     particles = particles.filter(p => p.life > 0);
@@ -234,28 +247,37 @@ function update() {
 
     if (currentTile === 2) { gameState = 'gameover_drown'; return; }
     
-    // --- GLISSADE SUR LES MURS (Pas de ralentissement de la speed, juste annulation du vecteur de la direction bloquée) ---
+    // Glissade murs
     let nextTileX = map.getTileTypeAt(player.x + player.vx * 1.5, player.y);
     let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 1.5);
-    // Batiments solides: 0 (Normal), 5 (Bank), 6 (Hospital), 8 (Police Station). 7 (Garage) est ouvert !
     if([0, 5, 6, 8].includes(nextTileX)) { player.vx = 0; } 
     if([0, 5, 6, 8].includes(nextTileY)) { player.vy = 0; }
 
     let pBounds = player.getBounds();
     for(let f of map.fuels) { if(!f.collected && Math.hypot(player.x - f.x, player.y - f.y) < 50) { f.collected = true; player.fuel = Math.min(100, player.fuel + f.amount); } }
     
+    // Clefs dans Garage pour +1 HP
+    for(let w of map.wrenches) {
+        if(!w.collected && Math.hypot(player.x - w.x, player.y - w.y) < 40) {
+            w.collected = true;
+            player.health = Math.min(player.maxHealth, player.health + 1);
+            for(let i=0; i<15; i++) particles.push(new Particle(player.x, player.y, '#00ffcc'));
+        }
+    }
+
+    // Cargos (Clefs normales)
     for(let k of map.keys) { 
         if(!k.collected && Math.hypot(player.x - k.x, player.y - k.y) < 50) { 
             k.collected = true; 
             player.keysCollected++; 
-            wantedLevel = player.keysCollected; // Prise de cargo = Etoiles = Spawn Police
+            wantedLevel = player.keysCollected; 
         } 
     }
 
     for(let ped of pedestrians) {
         if(ped.alive && Math.hypot(player.x - ped.x, player.y - ped.y) < 25) {
             ped.alive = false; 
-            wantedLevel = Math.max(wantedLevel, 1); // Ecraser un piéton donne min 1 étoile
+            wantedLevel = Math.max(wantedLevel, 1); 
             for(let i=0; i<15; i++) particles.push(new Particle(ped.x, ped.y, '#cc0000'));
         }
     }
@@ -264,7 +286,8 @@ function update() {
         if (rectIntersect(pBounds, b.getBounds())) {
             b.life = 0;
             if (invulnerabilityTimer <= 0) {
-                player.health--; invulnerabilityTimer = 42; player.speed *= 0.5; 
+                player.health -= 2; // DEGAT DU CHAR = 2
+                invulnerabilityTimer = 42; player.speed *= 0.5; 
                 for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#ff3300'));
                 if(player.health <= 0) gameState = 'gameover_crash';
             }
@@ -273,7 +296,7 @@ function update() {
 
     for(let c of civilians) {
         if(rectIntersect(pBounds, c.getBounds())) {
-            wantedLevel = Math.max(wantedLevel, 1); // Frapper un civil donne min 1 étoile
+            wantedLevel = Math.max(wantedLevel, 1); 
 
             let dx = player.x - c.x; let dy = player.y - c.y; let dist = Math.hypot(dx, dy);
             if (dist > 0) { 
@@ -292,12 +315,24 @@ function update() {
 
     let underArrest = false;
     for(let p of police) {
+        // Alerte "Cop m'a vu" pour spawn supplémentaire au Level 2
+        if (wantedLevel === 2 && Math.hypot(player.x - p.x, player.y - p.y) < 300 && Math.random() < 0.01) {
+            alertOppositeCop();
+        }
+
         if(rectIntersect(pBounds, p.getBounds())) {
+            // CHAR ONE SHOT CORPS A CORPS
+            if(p.type === 3) {
+                player.health = 0;
+                gameState = 'gameover_crash';
+                break;
+            }
+
             let dx = player.x - p.x; let dy = player.y - p.y; let dist = Math.hypot(dx, dy);
             if (dist > 0) {
                 player.vx += (dx / dist) * 3; player.vy += (dy / dist) * 3;
                 let pNextT = map.getTileTypeAt(p.x - (dx/dist)*3, p.y - (dy/dist)*3);
-                if(![0, 5, 6, 7, 2].includes(pNextT)) { // Police ignore la station (8)
+                if(![0, 5, 6, 7, 2].includes(pNextT)) { 
                     p.vx -= (dx / dist) * 3; p.vy -= (dy / dist) * 3;
                 }
             }
