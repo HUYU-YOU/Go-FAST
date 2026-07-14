@@ -94,18 +94,16 @@ function finishStartGame(carType) {
     let px = map.bankSpawn.x * map.tileSize + map.tileSize / 2; 
     let py = map.bankSpawn.y * map.tileSize + map.tileSize / 2;
     
-    // --- CORRECTION DU BUG INFINI ICI --- 
-    // Au lieu d'avancer à l'aveugle, on cherche mathématiquement la route la plus proche de la banque
+    // --- CORRECTION ABSOLUE DU BUG DE CHARGEMENT INFINI ---
     let searchRadius = 1;
     let foundRoad = false;
-    while(searchRadius <= 5 && !foundRoad) {
+    while(searchRadius <= 10 && !foundRoad) {
         for(let dx = -searchRadius; dx <= searchRadius; dx++) {
             for(let dy = -searchRadius; dy <= searchRadius; dy++) {
                 let nx = map.bankSpawn.x + dx;
                 let ny = map.bankSpawn.y + dy;
-                // Verifie qu'on ne sort pas de la map
                 if(nx >= 0 && nx < map.cols && ny >= 0 && ny < map.rows) {
-                    if(map.grid[ny][nx] === 1) { // Type 1 = Route
+                    if(map.grid[ny][nx] === 1) { 
                         px = nx * map.tileSize + map.tileSize / 2;
                         py = ny * map.tileSize + map.tileSize / 2;
                         foundRoad = true; break;
@@ -116,8 +114,6 @@ function finishStartGame(carType) {
         }
         searchRadius++;
     }
-    // S'il n'y a VRAIMENT aucune route à côté (très rare), on pose la voiture au centre de la banque
-    // ------------------------------------
 
     player = new Player(px, py, carType);
     player.keysCollected = 0;
