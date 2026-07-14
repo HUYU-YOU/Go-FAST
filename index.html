@@ -1,16 +1,15 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GoFast - Overdrive (Bank Heist)</title>
+    <title>GoFast - Overdrive (Ultimate Edition)</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
-        <!-- Slider d'images en fond -->
         <div id="bg-slider"></div>
 
-        <!-- Contrôles Audio Globaux (En haut à gauche) -->
         <div id="global-audio-controls">
             <button id="mute-btn" onclick="toggleMute()">🔊</button>
             <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
@@ -55,7 +54,7 @@
             <div class="screen-content">
                 <h2>SELECT YOUR RIDE</h2>
                 <div class="car-roster">
-                    <div class="car-card" onclick="startGame('ferrari')">
+                    <div class="car-card" onclick="startGame('fer')">
                         <h3 style="color:#ffcc00;">YELLOW FERRARI</h3>
                         <p>Speed: ██████████</p>
                         <p>Endurance: ██░░░░░░░░</p>
@@ -66,6 +65,13 @@
                         <p>Speed: ███████░░░</p>
                         <p>Endurance: ███████░░░</p>
                         <p>Hull: 5 HP</p>
+                    </div>
+                    <!-- AJOUT DE LA CABRIOLET VIOLETTE -->
+                    <div class="car-card" onclick="startGame('cab')">
+                        <h3 style="color:#a32cc4;">PURPLE CABRIOLET</h3>
+                        <p>Speed: █████░░░░░</p>
+                        <p>Endurance: ██████████</p>
+                        <p>Hull: 7 HP</p>
                     </div>
                 </div>
                 <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
@@ -95,8 +101,8 @@
     </div>
 
     <script src="js/input.js"></script>
-    <script src="js/map.js"></script>
     <script src="js/entities.js"></script>
+    <script src="js/map.js"></script>
     <script src="js/game.js"></script>
 </body>
 </html>
