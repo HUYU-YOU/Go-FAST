@@ -442,19 +442,19 @@ function draw() {
                 sub.style.fontWeight = "bold";
 
                 if(gameState === 'gameover_crash') { 
-                    title.innerText = ""; sub.innerText = "Apprend a conduire"; sub.style.color = "#ff1a1a";
+                    title.innerText = ""; sub.innerText = "Apprends a conduire SALOPE"; sub.style.color = "#ff1a1a";
                     msgScreen.style.backgroundImage = "url('img/broken_end.png')";
                 } 
                 else if (gameState === 'gameover_arrest') { 
-                    title.innerText = ""; sub.innerText = "Tu t'es chopper"; sub.style.color = "#1a1aff";
+                    title.innerText = ""; sub.innerText = "Tu t'es fait chopper, CHEHHHH"; sub.style.color = "#1a1aff";
                     msgScreen.style.backgroundImage = "url('img/police_end.png')";
                 } 
                 else if (gameState === 'gameover_drown') { 
-                    title.innerText = ""; sub.innerText = "T'es tombe a l'eau"; sub.style.color = "#1a8cff";
+                    title.innerText = ""; sub.innerText = "T'es tombe a l'eau MEC"; sub.style.color = "#1a8cff";
                     msgScreen.style.backgroundImage = "url('img/water_end.png')";
                 }
                 else if (gameState === 'win') { 
-                    title.innerText = "GO-FAST RÉUSSI !"; title.style.color = "#00ff66"; sub.innerText = ""; 
+                    title.innerText = "Tout comme Tom, t'es riche, MEC"; title.style.color = "#00ff66"; sub.innerText = ""; 
                     msgScreen.style.backgroundImage = "url('img/win_end.png')";
                 }
             }
