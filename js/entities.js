@@ -3,7 +3,7 @@ const ASSETS = {
     gti: [], cab: [], fer: [], cops: [],
     police: new Image(), chu: new Image(), garage: new Image(), bank: new Image(),
     water: new Image(), roadH: new Image(), roadV: new Image(), crossroad: new Image(),
-    bridgeH: new Image(), bridgeV: new Image(),
+    bridgeH: new Image(), bridgeV: new Image(), crossroadBridge: new Image(),
     van: new Image(), tank: new Image(), helico: new Image()
 };
 
@@ -30,6 +30,7 @@ ASSETS.roadV = loadImg('img/roadverticale.png');
 ASSETS.crossroad = loadImg('img/carrefour.png');
 ASSETS.bridgeH = loadImg('img/road_bridgehorizontale.png');
 ASSETS.bridgeV = loadImg('img/road_bridgeverticale.png');
+ASSETS.crossroadBridge = loadImg('img/carrefour_bridge.png');
 ASSETS.van = loadImg('img/Van.png');
 ASSETS.tank = loadImg('img/Tank.png');
 ASSETS.helico = loadImg('img/helico.png');
@@ -80,7 +81,7 @@ class Player extends Car {
         else if (carType === 'cab') { color = '#a32cc4'; maxSpeed = 26.5; maxHealth = 7; }
         else { color = '#111111'; maxSpeed = 31.8; maxHealth = 5; }
 
-        super(x, y, 84, 48, color); // TAILLE x2
+        super(x, y, 84, 48, color); 
         this.carType = carType || 'gti'; 
         this.baseMaxSpeed = maxSpeed; this.acceleration = 0.45; 
         this.health = maxHealth; this.maxHealth = maxHealth; this.fuelDrainRate = fuelDrain;
@@ -130,11 +131,10 @@ class Player extends Car {
         }
         
         if(img && img.complete && img.naturalWidth > 0) {
-            ctx.rotate(Math.PI / 2); // Rotation pour image vers le nord
+            ctx.rotate(Math.PI / 2);
             ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
             ctx.rotate(-Math.PI / 2);
         } else {
-            // FALLBACK MAGENTA FLUO en cas d'image introuvable
             ctx.fillStyle = 'magenta'; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
             ctx.fillStyle = 'cyan'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
         }
@@ -144,7 +144,7 @@ class Player extends Car {
 
 class Civilian extends Car {
     constructor(x, y) {
-        super(x, y, 80, 48, '#555560'); // TAILLE x2
+        super(x, y, 80, 48, '#555560'); 
         this.maxSpeed = (4 + Math.random() * 3) * 0.7; 
         let dirs = [0, Math.PI/2, Math.PI, -Math.PI/2];
         this.angle = dirs[Math.floor(Math.random() * dirs.length)];
@@ -182,7 +182,6 @@ class Police extends Car {
         this.skinIndex = Math.floor(Math.random() * 2);
         
         let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
-        
         if (type === 1) { this.maxSpeed = 7.3 + speedBoost; this.acceleration = 0.07; this.turnSpeed = 0.025; } 
         else if (type === 2) { this.w = 104; this.h = 60; this.maxSpeed = 5.9 + speedBoost; this.acceleration = 0.05; this.turnSpeed = 0.020; } 
         else if (type === 3) { this.w = 130; this.h = 76; this.maxSpeed = 3.5 + speedBoost; this.acceleration = 0.02; this.turnSpeed = 0.012; }
@@ -288,7 +287,7 @@ class Helicopter {
 
 class Pedestrian {
     constructor(x, y) {
-        this.x = x; this.y = y; this.w = 40; this.h = 40; // TAILLE x2
+        this.x = x; this.y = y; this.w = 40; this.h = 40; 
         this.vx = (Math.random() - 0.5); this.vy = (Math.random() - 0.5);
         this.alive = true;
         this.skinIndex = Math.floor(Math.random() * 13); 
@@ -314,8 +313,7 @@ class Pedestrian {
             ctx.rotate(angle + Math.PI / 2);
             ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
             ctx.restore();
-        } else {
-            ctx.fillStyle = '#ffcc99'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, this.w/2, 0, Math.PI*2); ctx.fill();
-        }
+        } 
+        // AUCUN ROND BEIGE PAR DEFAUT !
     }
 }
