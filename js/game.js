@@ -10,7 +10,8 @@ let gameState = 'menu', camera, invulnerabilityTimer;
 let escCooldown = 0, wantedLevel = 0;
 let creditsY = 0;
 let startTime = 0;
-let currentSelectedCar = 'gti'; // Véhicule par défaut au menu
+
+let currentSelectedCar = 'gti'; 
 
 const creditsText = [
     "Realisateur: Romain Contant", "Developpeur: Romain Contant", "Compositeur: Romain Contant and Tupac",
@@ -39,6 +40,7 @@ function stopBgSlider() {
 }
 
 let globalVolume = 0.5, isMuted = false, audioInitialized = false, radioCooldown = 0, currentRadioIndex = 0;
+
 const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
     { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') },
@@ -67,8 +69,8 @@ function applyVolumeSettings() {
 
 function updateMenuBestScore() {
     let best = localStorage.getItem('gofast_best_time');
-    let el = document.getElementById('global-best-score');
-    if(el) {
+    let els = document.querySelectorAll('.best-score-text');
+    els.forEach(el => {
         if(best) {
             let mins = Math.floor(best / 60000).toString().padStart(2, '0');
             let secs = Math.floor((best % 60000) / 1000).toString().padStart(2, '0');
@@ -77,15 +79,13 @@ function updateMenuBestScore() {
         } else {
             el.innerText = `🏆 Best Score: --:--.---`;
         }
-    }
+    });
 }
 
-// --- LOGIQUE VISUELLE DE SÉLECTION DE VÉHICULE ---
 window.selectCar = function(carType) {
     currentSelectedCar = carType;
     let cards = document.querySelectorAll('.car-card');
     
-    // Remise à zéro visuelle
     cards.forEach(c => {
         c.style.boxShadow = '0 4px 15px rgba(0,0,0,0.5)';
         c.style.borderColor = 'rgba(255, 255, 255, 0.15)';
@@ -93,7 +93,6 @@ window.selectCar = function(carType) {
         c.style.transform = 'translateY(0) scale(1)';
     });
     
-    // Mise en surbrillance de la carte cliquée
     let card = document.getElementById('card-' + carType);
     if(card) {
         let glowColor = '#00ffcc';
@@ -108,7 +107,6 @@ window.selectCar = function(carType) {
         card.style.transform = 'translateY(-8px) scale(1.05)';
     }
     
-    // Mise à jour du chrono spécifique
     let bestSpecific = localStorage.getItem('gofast_best_time_' + carType);
     let el = document.getElementById('specific-best-score');
     if(el) {
@@ -121,7 +119,6 @@ window.selectCar = function(carType) {
             el.innerText = `⏱️ Record Véhicule: --:--.---`;
         }
         
-        // Adapte la couleur du chrono à la voiture
         let scoreColor = '#00ffcc';
         if(carType === 'fer') scoreColor = '#ffcc00';
         if(carType === 'gti') scoreColor = '#ffffff';
@@ -133,7 +130,6 @@ window.selectCar = function(carType) {
     }
 }
 
-// Clic final sur "Start Game"
 window.confirmCarSelection = function() {
     if(currentSelectedCar) {
         startGame(currentSelectedCar);
@@ -155,7 +151,7 @@ function showScreen(id) {
         if(id === 'car-select') {
             if(localStorage.getItem('gofast_unlocked_moto') === 'true') document.getElementById('card-moto').style.display = 'flex';
             if(localStorage.getItem('gofast_unlocked_tank') === 'true') document.getElementById('card-tank_p').style.display = 'flex';
-            selectCar(currentSelectedCar); // Présélectionne le visuel
+            selectCar(currentSelectedCar); 
         }
     } else if (id === null && gameState === 'playing') { 
         stopBgSlider(); 
@@ -189,7 +185,8 @@ function startGame(carType) {
 }
 
 function finishStartGame(carType) {
-    map = new CityMap(); 
+    map = new CityMap(carType); // <--- INTEGRATION DU PARAMETRE POUR LA GENERATION DE CARGO
+    
     let px = map.bankSpawn.x * map.tileSize + map.tileSize / 2; 
     let py = map.bankSpawn.y * map.tileSize + map.tileSize / 2;
     
@@ -286,10 +283,14 @@ function triggerWin() {
     let finalTime = Date.now() - startTime;
     
     let best = localStorage.getItem('gofast_best_time');
-    if (!best || finalTime < parseInt(best)) localStorage.setItem('gofast_best_time', finalTime.toString());
+    if (!best || finalTime < parseInt(best)) {
+        localStorage.setItem('gofast_best_time', finalTime.toString());
+    }
 
     let bestSpecific = localStorage.getItem('gofast_best_time_' + player.carType);
-    if (!bestSpecific || finalTime < parseInt(bestSpecific)) localStorage.setItem('gofast_best_time_' + player.carType, finalTime.toString());
+    if (!bestSpecific || finalTime < parseInt(bestSpecific)) {
+        localStorage.setItem('gofast_best_time_' + player.carType, finalTime.toString());
+    }
 
     if (player.carType === 'tank_p') {
         gameState = 'credits';
@@ -559,12 +560,8 @@ function update() {
                 if (!hit) {
                     for (let p of police) {
                         if (!p.dead && rectIntersect(p.getBounds(), b.getBounds())) {
-                            if (p.type !== 3) {
-                                p.dead = true; p.vx = 0; p.vy = 0;
-                                for(let i=0; i<25; i++) particles.push(new Particle(p.x, p.y, '#ff3300'));
-                            } else {
-                                for(let i=0; i<5; i++) particles.push(new Particle(b.x, b.y, '#ffff00'));
-                            }
+                            p.dead = true; p.vx = 0; p.vy = 0;
+                            for(let i=0; i<25; i++) particles.push(new Particle(p.x, p.y, '#ff3300'));
                             b.life = 0; hit = true;
                             break;
                         }
@@ -647,10 +644,10 @@ function update() {
         let nitroNode = document.getElementById('nitro');
         if (nitroNode) {
             if(player.carType === 'tank_p') {
-                nitroNode.innerText = `SHOOT: [RIGHT CLICK]`;
+                nitroNode.innerText = `SHOOT: [LEFT CLICK]`;
                 nitroNode.style.color = '#ffcc00';
             } else if(player.nitroUnlocked) {
-                nitroNode.innerText = `NITRO: ${Math.ceil(player.nitro)}% [RIGHT CLICK]`;
+                nitroNode.innerText = `NITRO: ${Math.ceil(player.nitro)}% [LEFT CLICK]`;
                 nitroNode.style.color = '#00e5ff';
             } else {
                 nitroNode.innerText = `NITRO: LOCKED`;
