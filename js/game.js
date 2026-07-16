@@ -9,6 +9,7 @@ let map, player, civilians, police, helicopters, pedestrians, particles, bullets
 let gameState = 'menu', camera, invulnerabilityTimer;
 let escCooldown = 0, wantedLevel = 0;
 let creditsY = 0;
+let startTime = 0; // Pour le chrono
 
 const creditsText = [
     "Realisateur: Romain Contant", "Developpeur: Romain Contant", "Compositeur: Romain Contant and Tupac",
@@ -64,21 +65,47 @@ function applyVolumeSettings() {
     radioStations.forEach((r, idx) => { if(gameState === 'playing' && idx === currentRadioIndex) r.audio.volume = targetVol; else r.audio.volume = 0; });
 }
 
+function updateMenuBestScore() {
+    let best = localStorage.getItem('gofast_best_time');
+    let el = document.getElementById('best-score-display');
+    if(el) {
+        if(best) {
+            let mins = Math.floor(best / 60000).toString().padStart(2, '0');
+            let secs = Math.floor((best % 60000) / 1000).toString().padStart(2, '0');
+            let ms = (best % 1000).toString().padStart(3, '0');
+            el.innerText = `Best Score: ${mins}:${secs}.${ms}`;
+        } else {
+            el.innerText = `Best Score: --:--.---`;
+        }
+    }
+}
+
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-    document.getElementById('bottom-hud').style.display = 'none'; document.getElementById('radio-wrapper').style.display = 'none';
+    document.getElementById('bottom-hud').style.display = 'none'; 
+    document.getElementById('radio-wrapper').style.display = 'none';
+    let timerDisplay = document.getElementById('timer-display');
+    if(timerDisplay) timerDisplay.style.display = 'none';
+
     if(id) document.getElementById(id).style.display = 'flex';
+    
     if(['main-menu', 'car-select', 'pause-screen', 'message-screen', 'loading-screen'].includes(id)) {
         startBgSlider();
+        if(id === 'main-menu') updateMenuBestScore();
         if(id === 'car-select') {
             if(localStorage.getItem('gofast_unlocked_moto') === 'true') document.getElementById('card-moto').style.display = 'block';
             if(localStorage.getItem('gofast_unlocked_tank') === 'true') document.getElementById('card-tank').style.display = 'block';
         }
-    } else if (id === null && gameState === 'playing') { stopBgSlider(); }
+    } else if (id === null && gameState === 'playing') { 
+        stopBgSlider(); 
+        if(timerDisplay) timerDisplay.style.display = 'block';
+    }
 }
+
 function resumeGame() { gameState = 'playing'; showScreen(null); document.getElementById('bottom-hud').style.display = 'flex'; document.getElementById('radio-wrapper').style.display = 'flex'; applyVolumeSettings(); }
 
 startBgSlider();
+updateMenuBestScore();
 
 function startGame(carType) {
     gameState = 'loading'; showScreen('loading-screen');
@@ -128,6 +155,7 @@ function finishStartGame(carType) {
 
     player = new Player(px, py, carType);
     wantedLevel = 0; 
+    startTime = Date.now(); // DEMARRAGE DU CHRONO
     
     civilians = []; police = []; helicopters = []; pedestrians = []; particles = []; bullets = [];
     camera = { x: player.x - canvas.width / 2, y: player.y - canvas.height / 2 }; 
@@ -147,6 +175,96 @@ function finishStartGame(carType) {
 
 function rectIntersect(r1, r2) { return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y); }
 
+// --- GESTION CENTRALISÉE DES ECRANS DE FIN (Répare le bug visuel !) ---
+function triggerGameOver(reason) {
+    if (gameState.startsWith('gameover')) return; // Bloque la boucle
+    gameState = 'gameover_' + reason;
+    
+    radioStations.forEach(r => r.audio.volume = 0);
+    showScreen('message-screen'); 
+    
+    let title = document.getElementById('msg-title'); 
+    let sub = document.getElementById('msg-sub');
+    let msgScreen = document.getElementById('message-screen');
+    
+    if(msgScreen) {
+        msgScreen.style.backgroundSize = "cover";
+        msgScreen.style.backgroundPosition = "center";
+        msgScreen.style.backgroundColor = "rgba(0,0,0,0.9)"; 
+    }
+    if(title && sub) {
+        title.style.textShadow = "3px 3px 6px black";
+        sub.style.textShadow = "2px 2px 4px black";
+        sub.style.fontSize = "30px";
+        sub.style.fontWeight = "bold";
+
+        if(reason === 'crash') { 
+            title.innerText = ""; sub.innerText = "Apprend a conduire"; sub.style.color = "#ff1a1a";
+            msgScreen.style.backgroundImage = "url('img/broken_end.png')";
+        } 
+        else if (reason === 'arrest') { 
+            title.innerText = ""; sub.innerText = "Tu t'es chopper"; sub.style.color = "#1a1aff";
+            msgScreen.style.backgroundImage = "url('img/police_end.png')";
+        } 
+        else if (reason === 'drown') { 
+            title.innerText = ""; sub.innerText = "T'es tombe a l'eau"; sub.style.color = "#1a8cff";
+            msgScreen.style.backgroundImage = "url('img/water_end.png')";
+        }
+        else if (reason === 'fuel') { 
+            title.innerText = ""; sub.innerText = "Panne seche !"; sub.style.color = "#ff5500";
+            msgScreen.style.backgroundImage = "url('img/fuel_end.png')";
+        }
+        else if (reason === 'tank') { 
+            title.innerText = ""; sub.innerText = "Ecrase par un tank !"; sub.style.color = "#1e4620";
+            msgScreen.style.backgroundImage = "url('img/tank_end.png')";
+        }
+    }
+}
+
+function triggerWin() {
+    if (gameState === 'win' || gameState === 'credits') return;
+    
+    // SAUVEGARDE DU SPEEDRUN
+    let finalTime = Date.now() - startTime;
+    let best = localStorage.getItem('gofast_best_time');
+    if (!best || finalTime < parseInt(best)) {
+        localStorage.setItem('gofast_best_time', finalTime.toString());
+    }
+
+    if (player.carType === 'tank_p') {
+        gameState = 'credits';
+        creditsY = canvas.height;
+        radioStations.forEach(r => r.audio.volume = 0);
+        menuMusic.play().catch(e=>e);
+    } else {
+        if (player.carType === 'moto') localStorage.setItem('gofast_unlocked_tank', 'true');
+        else localStorage.setItem('gofast_unlocked_moto', 'true');
+        
+        gameState = 'win';
+        radioStations.forEach(r => r.audio.volume = 0);
+        showScreen('message-screen');
+        
+        let title = document.getElementById('msg-title'); 
+        let sub = document.getElementById('msg-sub');
+        let msgScreen = document.getElementById('message-screen');
+        
+        if(msgScreen) {
+            msgScreen.style.backgroundSize = "cover";
+            msgScreen.style.backgroundPosition = "center";
+            msgScreen.style.backgroundColor = "rgba(0,0,0,0.9)"; 
+            msgScreen.style.backgroundImage = "url('img/win_end.png')";
+        }
+        if(title && sub) {
+            title.style.textShadow = "3px 3px 6px black";
+            sub.style.textShadow = "2px 2px 4px black";
+            sub.style.fontSize = "30px";
+            sub.style.fontWeight = "bold";
+            title.innerText = "GO-FAST RÉUSSI !"; title.style.color = "#00ff66"; 
+            sub.innerText = "Nouveau vehicule debloque au menu !"; 
+        }
+    }
+}
+
 function applyDamage(amount) {
     if (invulnerabilityTimer > 0) return;
     
@@ -165,7 +283,7 @@ function applyDamage(amount) {
         for(let i=0; i<40; i++) particles.push(new Particle(player.x, player.y, '#00e5ff'));
     }
 
-    if(player.health <= 0) gameState = 'gameover_crash';
+    if(player.health <= 0) triggerGameOver('crash');
 }
 
 function spawnEntities() {
@@ -278,6 +396,16 @@ function update() {
         if(gameState !== 'playing') return;
         if(typeof keys === 'undefined') return;
         
+        // GESTION DU CHRONOMETRE SPEEDRUN
+        let currentTime = Date.now() - startTime;
+        let timerNode = document.getElementById('timer-display');
+        if (timerNode) {
+            let mins = Math.floor(currentTime / 60000).toString().padStart(2, '0');
+            let secs = Math.floor((currentTime % 60000) / 1000).toString().padStart(2, '0');
+            let ms = (currentTime % 1000).toString().padStart(3, '0');
+            timerNode.innerText = `TIME: ${mins}:${secs}.${ms}`;
+        }
+        
         if(invulnerabilityTimer > 0) invulnerabilityTimer--;
         if(radioCooldown > 0) radioCooldown--;
 
@@ -292,22 +420,27 @@ function update() {
             player.fuel = 0; 
             player.baseMaxSpeed = 0; 
             if (Math.abs(player.speed) < 0.1 && player.health > 0) {
-                gameState = 'gameover_fuel';
+                triggerGameOver('fuel');
             }
         }
 
         let currentTile = map.getTileTypeAt(player.x, player.y);
         
+        // --- GESTION DU GARAGE : PLEIN D'ESSENCE ---
+        if (currentTile === 7 && player.fuel < 100) {
+            player.fuel = 100;
+            for(let i=0; i<2; i++) particles.push(new Particle(player.x, player.y, '#00ffcc'));
+        }
+
         player.underHeliSpotlight = false;
         for(let h of helicopters) {
             h.updateAI(player);
             if(Math.hypot(player.x - h.x, player.y - h.y) < 200) player.underHeliSpotlight = true;
         }
 
-        // --- SYSTEME DE TIR DU TANK PLAYER ---
         if (keys.shoot && player.carType === 'tank_p' && player.shootCooldown <= 0) {
             bullets.push(new Bullet(player.x, player.y, player.angle, 'player'));
-            player.shootCooldown = 40; // Temps de recharge
+            player.shootCooldown = 40; 
         }
 
         player.updatePlayer(keys, currentTile); spawnEntities();
@@ -324,7 +457,7 @@ function update() {
         particles = particles.filter(p => p.life > 0);
         bullets = bullets.filter(b => b.life > 0);
 
-        if (currentTile === 2) { gameState = 'gameover_drown'; return; }
+        if (currentTile === 2) { triggerGameOver('drown'); return; }
         
         let nextTileX = map.getTileTypeAt(player.x + player.vx * 1.5, player.y);
         let nextTileY = map.getTileTypeAt(player.x, player.y + player.vy * 1.5);
@@ -360,8 +493,6 @@ function update() {
 
         for(let b of bullets) {
             if (b.life <= 0) continue;
-            
-            // Si c'est un boulet tiré par NOUS (Le tank joueur)
             if (b.owner === 'player') {
                 let hit = false;
                 for (let c of civilians) {
@@ -378,7 +509,6 @@ function update() {
                                 p.dead = true; p.vx = 0; p.vy = 0;
                                 for(let i=0; i<25; i++) particles.push(new Particle(p.x, p.y, '#ff3300'));
                             } else {
-                                // Tank de police ne meurt pas d'un coup, on fait juste une étincelle
                                 for(let i=0; i<5; i++) particles.push(new Particle(b.x, b.y, '#ffff00'));
                             }
                             b.life = 0; hit = true;
@@ -387,7 +517,6 @@ function update() {
                     }
                 }
             } else {
-                // Balles de la police qui nous touchent
                 if (rectIntersect(pBounds, b.getBounds())) {
                     b.life = 0; applyDamage(2);
                 }
@@ -417,7 +546,7 @@ function update() {
                 if(!p.dead) {
                     if(p.type === 3) {
                         player.health = 0; 
-                        gameState = 'gameover_tank'; 
+                        triggerGameOver('tank'); 
                         break;
                     }
                     applyDamage(1);
@@ -435,29 +564,15 @@ function update() {
             }
         }
         
-        let aw = document.getElementById('arrest-warning');
         if(underArrest) { 
-            player.arrestTimer++; if(aw) aw.style.display = 'block'; 
-            if(player.arrestTimer > 100) gameState = 'gameover_arrest'; 
+            player.arrestTimer++; 
+            if(player.arrestTimer > 100) triggerGameOver('arrest'); 
         } else { 
             player.arrestTimer = Math.max(0, player.arrestTimer - 2); 
-            if(player.arrestTimer === 0 && aw) aw.style.display = 'none'; 
         }
 
         if(player.keysCollected >= player.targetCargo) {
-            if (player.carType === 'tank_p') {
-                gameState = 'credits';
-                creditsY = canvas.height;
-                radioStations.forEach(r => r.audio.volume = 0);
-                menuMusic.play().catch(e=>e);
-            } else {
-                if (player.carType === 'moto') {
-                    localStorage.setItem('gofast_unlocked_tank', 'true');
-                } else {
-                    localStorage.setItem('gofast_unlocked_moto', 'true');
-                }
-                gameState = 'win';
-            }
+            triggerWin();
         }
 
         camera.x = player.x - canvas.width / 2; camera.y = player.y - canvas.height / 2;
@@ -482,7 +597,7 @@ function update() {
         let cargoNode = document.getElementById('cargo');
         if (cargoNode) cargoNode.innerText = `CARGO: ${player.keysCollected}/${player.targetCargo}`;
         let wantedNode = document.getElementById('wanted-display');
-        if (wantedNode) wantedNode.innerText = wantedLevel > 0 ? `WANTED: ${'★'.repeat(Math.min(5, wantedLevel))}` : `CHILL MODE 😎`;
+        if (wantedNode) wantedNode.innerText = wantedLevel > 0 ? `WANTED: ${'★'.repeat(Math.min(5, wantedLevel))}` : `WANTED: CHILL MODE 😎`;
 
     } catch (e) { console.error("Erreur Update: ", e); }
 }
@@ -520,51 +635,6 @@ function draw() {
                 ctx.fillText(creditsText[i], canvas.width/2, creditsY + i*50);
             }
             creditsY -= 1.5; 
-        }
-        else if(gameState.startsWith('gameover') || gameState === 'win') {
-            showScreen('message-screen'); 
-            radioStations.forEach(r=>r.audio.volume=0);
-            
-            let title = document.getElementById('msg-title'); 
-            let sub = document.getElementById('msg-sub');
-            let msgScreen = document.getElementById('message-screen');
-            
-            if(msgScreen) {
-                msgScreen.style.backgroundSize = "cover";
-                msgScreen.style.backgroundPosition = "center";
-                msgScreen.style.backgroundColor = "rgba(0,0,0,0.9)"; 
-            }
-            if(title && sub) {
-                title.style.textShadow = "3px 3px 6px black";
-                sub.style.textShadow = "2px 2px 4px black";
-                sub.style.fontSize = "30px";
-                sub.style.fontWeight = "bold";
-
-                if(gameState === 'gameover_crash') { 
-                    title.innerText = ""; sub.innerText = "Apprend a conduire"; sub.style.color = "#ff1a1a";
-                    msgScreen.style.backgroundImage = "url('img/broken_end.png')";
-                } 
-                else if (gameState === 'gameover_arrest') { 
-                    title.innerText = ""; sub.innerText = "Tu t'es chopper"; sub.style.color = "#1a1aff";
-                    msgScreen.style.backgroundImage = "url('img/police_end.png')";
-                } 
-                else if (gameState === 'gameover_drown') { 
-                    title.innerText = ""; sub.innerText = "T'es tombe a l'eau"; sub.style.color = "#1a8cff";
-                    msgScreen.style.backgroundImage = "url('img/water_end.png')";
-                }
-                else if (gameState === 'gameover_fuel') { 
-                    title.innerText = ""; sub.innerText = "Panne seche !"; sub.style.color = "#ff5500";
-                    msgScreen.style.backgroundImage = "url('img/fuel_end.png')";
-                }
-                else if (gameState === 'gameover_tank') { 
-                    title.innerText = ""; sub.innerText = "Ecrase par un tank !"; sub.style.color = "#1e4620";
-                    msgScreen.style.backgroundImage = "url('img/tank_end.png')";
-                }
-                else if (gameState === 'win') { 
-                    title.innerText = "GO-FAST RÉUSSI !"; title.style.color = "#00ff66"; sub.innerText = "Nouveau vehicule debloque au menu !"; 
-                    msgScreen.style.backgroundImage = "url('img/win_end.png')";
-                }
-            }
         }
     } catch (e) {
         console.error("Erreur Draw: ", e);
