@@ -51,15 +51,17 @@ class Particle {
 }
 
 class Bullet {
-    constructor(x, y, angle) {
+    constructor(x, y, angle, owner = 'police') {
         this.x = x; this.y = y; this.angle = angle;
+        this.owner = owner;
         this.speed = 15; this.life = 100;
         this.vx = Math.cos(this.angle) * this.speed;
         this.vy = Math.sin(this.angle) * this.speed;
     }
     update() { this.x += this.vx; this.y += this.vy; this.life--; }
     draw(ctx, camX, camY) {
-        ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 6, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = this.owner === 'player' ? '#00ffcc' : '#ffcc00'; 
+        ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 6, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 3, 0, Math.PI*2); ctx.fill();
     }
     getBounds() { return {x: this.x-6, y: this.y-6, w: 12, h: 12}; }
@@ -86,9 +88,9 @@ class Player extends Car {
         else if (carType === 'tank_p') { color = '#1e4620'; maxSpeed = 22.0; maxHealth = 20; targetCargo = 10; } 
         else { color = '#111111'; maxSpeed = 31.8; maxHealth = 5; }
 
-        // AJUSTEMENT DES TAILLES (Moto x2, Tank x2)
-        let width = carType === 'tank_p' ? 260 : (carType === 'moto' ? 120 : 84);
-        let height = carType === 'tank_p' ? 152 : (carType === 'moto' ? 60 : 48);
+        // Tank divisé par 2 (remis en 130x76)
+        let width = carType === 'tank_p' ? 130 : (carType === 'moto' ? 120 : 84);
+        let height = carType === 'tank_p' ? 76 : (carType === 'moto' ? 60 : 48);
 
         super(x, y, width, height, color); 
         this.carType = carType || 'gti'; 
@@ -99,12 +101,14 @@ class Player extends Car {
         this.nitro = 0; this.nitroUnlocked = false; this.hitTimestamps = [];
         this.keysCollected = 0; this.arrestTimer = 0;
         this.underHeliSpotlight = false;
+        this.shootCooldown = 0;
     }
     
     updatePlayer(keysInput, currentTileType) {
         let currentMax = this.baseMaxSpeed;
         if (currentTileType === 4) currentMax *= 0.5;
         if (this.underHeliSpotlight) currentMax *= 0.6; 
+        if (this.shootCooldown > 0) this.shootCooldown--;
 
         if(keysInput.nitro && this.nitroUnlocked && this.nitro > 0 && this.fuel > 0) {
             currentMax += 15; this.nitro -= 0.5; this.speed += this.acceleration * 2.5;
@@ -169,8 +173,15 @@ class Civilian extends Car {
         this.angle = dirs[Math.floor(Math.random() * dirs.length)];
         this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed;
         this.skinIndex = Math.floor(Math.random() * 12); 
+        this.dead = false; // Ajout mort
     }
     updateAI(mapObj) {
+        if(this.dead) {
+            this.vx *= 0.9; this.vy *= 0.9;
+            this.x += this.vx; this.y += this.vy;
+            return;
+        }
+
         let nextX = this.x + this.vx * 2; let nextY = this.y + this.vy * 2;
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
         if([0, 2, 5, 6, 7, 8].includes(nextTile)) {
@@ -182,13 +193,17 @@ class Civilian extends Car {
     }
     draw(ctx, camX, camY) {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
-        let img = ASSETS.civilians[this.skinIndex];
-        if(img && img.complete && img.naturalWidth > 0) {
-            ctx.rotate(Math.PI / 2);
-            ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
-            ctx.rotate(-Math.PI / 2);
+        if (this.dead) {
+            ctx.fillStyle = '#222'; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         } else {
-            ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
+            let img = ASSETS.civilians[this.skinIndex];
+            if(img && img.complete && img.naturalWidth > 0) {
+                ctx.rotate(Math.PI / 2);
+                ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
+                ctx.rotate(-Math.PI / 2);
+            } else {
+                ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
+            }
         }
         ctx.restore();
     }
@@ -203,11 +218,17 @@ class Police extends Car {
         let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
         if (type === 1) { this.maxSpeed = 7.3 + speedBoost; this.acceleration = 0.07; this.turnSpeed = 0.025; } 
         else if (type === 2) { this.w = 104; this.h = 60; this.maxSpeed = 5.9 + speedBoost; this.acceleration = 0.05; this.turnSpeed = 0.020; } 
-        // TAILLE TANK POLICE x2
-        else if (type === 3) { this.w = 260; this.h = 152; this.maxSpeed = 3.5 + speedBoost; this.acceleration = 0.02; this.turnSpeed = 0.012; }
+        // Tank de police divisé par 2 (remis à 130x76)
+        else if (type === 3) { this.w = 130; this.h = 76; this.maxSpeed = 3.5 + speedBoost; this.acceleration = 0.02; this.turnSpeed = 0.012; }
     }
 
     updateAI(playerObj, mapObj, bulletsArr) {
+        if(this.dead) {
+            this.vx *= 0.9; this.vy *= 0.9;
+            this.x += this.vx; this.y += this.vy;
+            return;
+        }
+
         if(this.spinTimer > 0) { 
             this.spinTimer--; this.angle += 0.2; this.vx *= 0.92; this.vy *= 0.92; 
             this.x += this.vx; this.y += this.vy; return; 
@@ -240,12 +261,12 @@ class Police extends Car {
 
         super.update();
 
-        if(mapObj.getTileTypeAt(this.x, this.y) === 2) { this.dead = true; }
+        // if(mapObj.getTileTypeAt(this.x, this.y) === 2) { this.dead = true; } // Removed to avoid dying instantly on water edge
 
         if (this.type === 3) {
             this.shootTimer--;
             if (this.shootTimer <= 0 && Math.hypot(playerObj.x - this.x, playerObj.y - this.y) < 800) {
-                bulletsArr.push(new Bullet(this.x, this.y, targetAngle));
+                bulletsArr.push(new Bullet(this.x, this.y, targetAngle, 'police'));
                 this.shootTimer = 90; 
             }
         }
@@ -253,26 +274,30 @@ class Police extends Car {
     draw(ctx, camX, camY) {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         
-        let img = null;
-        if (this.type === 1) img = ASSETS.cops[this.skinIndex];
-        else if (this.type === 2) img = ASSETS.van;
-        else if (this.type === 3) img = ASSETS.tank;
-
-        if (img && img.complete && img.naturalWidth > 0) {
-            ctx.rotate(Math.PI / 2);
-            ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
-            ctx.rotate(-Math.PI / 2);
+        if (this.dead) {
+            ctx.fillStyle = '#222'; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         } else {
-            this.color = (this.type === 3) ? '#1e4620' : '#1e3ee6';
-            ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-        }
-        
-        if (this.type === 1 || this.type === 2) {
-            let time = Date.now();
-            ctx.fillStyle = (time % 300 < 150) ? 'red' : 'blue';
-            ctx.fillRect(-12, -this.h/2 + 4, 8, 8);
-            ctx.fillStyle = (time % 300 < 150) ? 'blue' : 'red';
-            ctx.fillRect(4, -this.h/2 + 4, 8, 8);
+            let img = null;
+            if (this.type === 1) img = ASSETS.cops[this.skinIndex];
+            else if (this.type === 2) img = ASSETS.van;
+            else if (this.type === 3) img = ASSETS.tank;
+
+            if (img && img.complete && img.naturalWidth > 0) {
+                ctx.rotate(Math.PI / 2);
+                ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
+                ctx.rotate(-Math.PI / 2);
+            } else {
+                this.color = (this.type === 3) ? '#1e4620' : '#1e3ee6';
+                ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
+            }
+            
+            if (this.type === 1 || this.type === 2) {
+                let time = Date.now();
+                ctx.fillStyle = (time % 300 < 150) ? 'red' : 'blue';
+                ctx.fillRect(-12, -this.h/2 + 4, 8, 8);
+                ctx.fillStyle = (time % 300 < 150) ? 'blue' : 'red';
+                ctx.fillRect(4, -this.h/2 + 4, 8, 8);
+            }
         }
         ctx.restore();
     }
