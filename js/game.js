@@ -1,35 +1,33 @@
 const canvas = document.getElementById('gameCanvas');
-
-// --- TECHNIQUE DE DEZOOM ---
-// On augmente la résolution interne du jeu pour voir plus loin
 canvas.width = 1600; 
 canvas.height = 960;
-canvas.style.width = "1000px"; // L'affichage web reste le même
+canvas.style.width = "1000px"; 
 canvas.style.height = "600px";
-
 const ctx = canvas.getContext('2d');
 
 let map, player, civilians, police, helicopters, pedestrians, particles, bullets;
 let gameState = 'menu', camera, invulnerabilityTimer;
-let escCooldown = 0;
-let wantedLevel = 0;
-let globalJSError = "";
+let escCooldown = 0, wantedLevel = 0;
+let creditsY = 0;
 
-const backgrounds = [
-    'url("img/background1.png")', 'url("img/background2.png")', 'url("img/background3.png")',
-    'url("img/background4.png")', 'url("img/background5.png")', 'url("img/background6.png")',
-    'url("img/background7.png")', 'url("img/background8.png")'
+const creditsText = [
+    "Realisateur: Romain Contant", "Developpeur: Romain Contant", "Compositeur: Romain Contant and Tupac",
+    "Graphisme: Romain Contant", "Musicien: Romain Contant and Hanz zimmer", "Producteur : Romain Contant",
+    "Psychologue : Romain Contant", "Armurerier : Romain Contant", "Activiste : Romain Contant",
+    "Financement : Jean Luc Melenchon", "Beta testeur: Nathan et Antoine",
+    "Merci a : Kelim, Antoine, Amelie, Nathan, Lucas, Emre le boss, Tom, Asgad",
+    "Et surtout merci a", "Romain Contant"
 ];
-let currentBgIndex = Math.floor(Math.random() * backgrounds.length);
-document.getElementById('bg-slider').style.backgroundImage = backgrounds[currentBgIndex];
+
+const backgrounds = ['url("img/background1.png")', 'url("img/background2.png")', 'url("img/background3.png")', 'url("img/background4.png")', 'url("img/background5.png")', 'url("img/background6.png")', 'url("img/background7.png")', 'url("img/background8.png")'];
 let bgInterval = null;
 
 function startBgSlider() {
     const slider = document.getElementById('bg-slider'); slider.style.display = 'block';
+    slider.style.backgroundImage = backgrounds[Math.floor(Math.random() * backgrounds.length)];
     if(!bgInterval) {
         bgInterval = setInterval(() => {
-            currentBgIndex = (currentBgIndex + 1) % backgrounds.length;
-            slider.style.backgroundImage = backgrounds[currentBgIndex];
+            slider.style.backgroundImage = backgrounds[Math.floor(Math.random() * backgrounds.length)];
         }, 4000);
     }
 }
@@ -53,39 +51,6 @@ const radioStations = [
     { name: "EpicUrien", audio: new Audio('audio/epicUrien.radio.mp3') }
 ];
 
-window.addEventListener('keydown', (e) => {
-    if(e.key.toLowerCase() === 'p' && gameState === 'playing') {
-        console.log("📸 Capture satellite de la map en cours (le jeu peut figer 2 secondes)...");
-        
-        // 1. Création d'un canvas géant en mémoire (10 000 x 10 000 pixels)
-        let exportCanvas = document.createElement('canvas');
-        exportCanvas.width = map.cols * map.tileSize;
-        exportCanvas.height = map.rows * map.tileSize;
-        let eCtx = exportCanvas.getContext('2d');
-        
-        // 2. Astuce : on trompe temporairement la fonction draw() en modifiant les variables globales
-        let oldW = canvas.width;
-        let oldH = canvas.height;
-        canvas.width = exportCanvas.width;
-        canvas.height = exportCanvas.height;
-        
-        // 3. On dessine toute la map (caméra fixée à 0,0) sur notre canvas géant
-        map.draw(eCtx, 0, 0);
-        
-        // 4. On remet la vraie taille du canvas pour ne pas casser le jeu
-        canvas.width = oldW;
-        canvas.height = oldH;
-        
-        // 5. Création et déclenchement automatique du téléchargement
-        let link = document.createElement('a');
-        link.download = 'GoFast_Map_Secrete.png';
-        link.href = exportCanvas.toDataURL('image/png');
-        link.click();
-        
-        console.log("✅ Map sauvegardée avec succès !");
-    }
-});
-
 window.addEventListener('click', () => {
     if(!audioInitialized) {
         audioInitialized = true; applyVolumeSettings();
@@ -105,6 +70,10 @@ function showScreen(id) {
     if(id) document.getElementById(id).style.display = 'flex';
     if(['main-menu', 'car-select', 'pause-screen', 'message-screen', 'loading-screen'].includes(id)) {
         startBgSlider();
+        if(id === 'car-select') {
+            if(localStorage.getItem('gofast_unlocked_moto') === 'true') document.getElementById('card-moto').style.display = 'block';
+            if(localStorage.getItem('gofast_unlocked_tank') === 'true') document.getElementById('card-tank').style.display = 'block';
+        }
     } else if (id === null && gameState === 'playing') { stopBgSlider(); }
 }
 function resumeGame() { gameState = 'playing'; showScreen(null); document.getElementById('bottom-hud').style.display = 'flex'; document.getElementById('radio-wrapper').style.display = 'flex'; applyVolumeSettings(); }
@@ -158,11 +127,10 @@ function finishStartGame(carType) {
     }
 
     player = new Player(px, py, carType);
-    player.keysCollected = 0;
     wantedLevel = 0; 
     
     civilians = []; police = []; helicopters = []; pedestrians = []; particles = []; bullets = [];
-    camera = { x: 0, y: 0 }; 
+    camera = { x: player.x - canvas.width / 2, y: player.y - canvas.height / 2 }; 
     invulnerabilityTimer = 0; 
     gameState = 'playing';
     
@@ -170,7 +138,7 @@ function finishStartGame(carType) {
     document.getElementById('bottom-hud').style.display = 'flex';
     document.getElementById('radio-wrapper').style.display = 'block';
     
-    currentRadioIndex = 0; 
+    currentRadioIndex = Math.floor(Math.random() * radioStations.length); // RADIO RANDOM AU DEBUT
     if(audioInitialized) {
         menuMusic.pause(); radioStations.forEach(r => { r.audio.loop = true; r.audio.volume = 0; r.audio.play().catch(e=>console.log(e)); });
         applyVolumeSettings(); document.getElementById('radio-display').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
@@ -178,6 +146,29 @@ function finishStartGame(carType) {
 }
 
 function rectIntersect(r1, r2) { return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y); }
+
+// NOUVEAU SYSTEME DE DEGATS PROPRE
+function applyDamage(amount) {
+    if (invulnerabilityTimer > 0) return;
+    
+    player.health -= amount;
+    invulnerabilityTimer = 42; 
+    player.speed *= 0.5; 
+    for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#ff3300'));
+    
+    // GESTION UNLOCK NITRO (3 coups en 5 secondes)
+    let now = Date.now();
+    player.hitTimestamps.push(now);
+    player.hitTimestamps = player.hitTimestamps.filter(t => now - t <= 5000);
+    
+    if (player.hitTimestamps.length >= 3 && !player.nitroUnlocked) {
+        player.nitroUnlocked = true;
+        player.nitro = 100;
+        for(let i=0; i<40; i++) particles.push(new Particle(player.x, player.y, '#00e5ff'));
+    }
+
+    if(player.health <= 0) gameState = 'gameover_crash';
+}
 
 function spawnEntities() {
     if(civilians.length < 25) {
@@ -280,7 +271,7 @@ function update() {
             document.getElementById('radio-display').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
         }
 
-        if (keys.up || keys.down || keys.left || keys.right || keys.nitro) player.fuel -= keys.nitro ? player.fuelDrainRate * 1.8 : player.fuelDrainRate;
+        if (keys.up || keys.down || keys.left || keys.right || (keys.nitro && player.nitroUnlocked)) player.fuel -= keys.nitro ? player.fuelDrainRate * 1.8 : player.fuelDrainRate;
         if(player.fuel <= 0) { player.fuel = 0; player.baseMaxSpeed = 0; }
 
         let currentTile = map.getTileTypeAt(player.x, player.y);
@@ -290,8 +281,6 @@ function update() {
             h.updateAI(player);
             if(Math.hypot(player.x - h.x, player.y - h.y) < 200) player.underHeliSpotlight = true;
         }
-        let w = document.getElementById('heli-warning');
-        if(w) w.style.display = player.underHeliSpotlight ? 'block' : 'none';
 
         player.updatePlayer(keys, currentTile); spawnEntities();
         
@@ -343,20 +332,13 @@ function update() {
 
         for(let b of bullets) {
             if (rectIntersect(pBounds, b.getBounds())) {
-                b.life = 0;
-                if (invulnerabilityTimer <= 0) {
-                    player.health -= 2; 
-                    invulnerabilityTimer = 42; player.speed *= 0.5; 
-                    for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#ff3300'));
-                    if(player.health <= 0) gameState = 'gameover_crash';
-                }
+                b.life = 0; applyDamage(2);
             }
         }
 
         for(let c of civilians) {
             if(rectIntersect(pBounds, c.getBounds())) {
                 wantedLevel = Math.max(wantedLevel, 1); 
-
                 let dx = player.x - c.x; let dy = player.y - c.y; let dist = Math.hypot(dx, dy);
                 if (dist > 0) { 
                     player.vx += (dx / dist) * 2; player.vy += (dy / dist) * 2; 
@@ -364,42 +346,28 @@ function update() {
                     let cNextT = map.getTileTypeAt(c.x + pushX, c.y + pushY);
                     if (![0, 5, 6, 8, 2].includes(cNextT)) { c.vx += pushX; c.vy += pushY; }
                 }
-                if (invulnerabilityTimer <= 0) {
-                    player.health--; invulnerabilityTimer = 42; player.speed *= 0.5; 
-                    for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#555'));
-                    if(player.health <= 0) gameState = 'gameover_crash';
-                }
+                applyDamage(1);
             }
         }
 
         let underArrest = false;
         for(let p of police) {
-            if (wantedLevel === 2 && Math.hypot(player.x - p.x, player.y - p.y) < 300 && Math.random() < 0.01) {
-                alertOppositeCop();
-            }
+            if (wantedLevel === 2 && Math.hypot(player.x - p.x, player.y - p.y) < 300 && Math.random() < 0.01) alertOppositeCop();
 
             if(rectIntersect(pBounds, p.getBounds())) {
                 if(p.type === 3) {
-                    player.health = 0;
-                    gameState = 'gameover_crash';
-                    break;
+                    player.health = 0; gameState = 'gameover_crash'; break;
                 }
 
                 let dx = player.x - p.x; let dy = player.y - p.y; let dist = Math.hypot(dx, dy);
                 if (dist > 0) {
                     player.vx += (dx / dist) * 3; player.vy += (dy / dist) * 3;
                     let pNextT = map.getTileTypeAt(p.x - (dx/dist)*3, p.y - (dy/dist)*3);
-                    if(![0, 5, 6, 7, 2].includes(pNextT)) { 
-                        p.vx -= (dx / dist) * 3; p.vy -= (dy / dist) * 3;
-                    }
+                    if(![0, 5, 6, 7, 2].includes(pNextT)) { p.vx -= (dx / dist) * 3; p.vy -= (dy / dist) * 3; }
                 }
                 player.speed *= 0.70; p.speed *= 0.50;
-
-                if (invulnerabilityTimer <= 0) {
-                    player.health--; invulnerabilityTimer = 42; 
-                    for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#555'));
-                    if(player.health <= 0) gameState = 'gameover_crash';
-                }
+                applyDamage(1);
+                
                 if(Math.abs(player.speed) < 2.0) underArrest = true; 
             }
         }
@@ -413,25 +381,45 @@ function update() {
             if(player.arrestTimer === 0 && aw) aw.style.display = 'none'; 
         }
 
-        if(player.keysCollected >= 5) gameState = 'win';
+        // --- GESTION DE LA VICTOIRE ET DEBLOCAGES ---
+        if(player.keysCollected >= player.targetCargo) {
+            if (player.carType === 'tank_p') {
+                gameState = 'credits';
+                creditsY = canvas.height;
+                radioStations.forEach(r => r.audio.volume = 0);
+                menuMusic.play().catch(e=>e);
+            } else {
+                if (player.carType === 'moto') {
+                    localStorage.setItem('gofast_unlocked_tank', 'true');
+                } else {
+                    localStorage.setItem('gofast_unlocked_moto', 'true');
+                }
+                gameState = 'win';
+            }
+        }
 
         camera.x = player.x - canvas.width / 2; camera.y = player.y - canvas.height / 2;
-        if (player.health <= 1 && Math.random() < 0.3) particles.push(new Particle(player.x, player.y, '#333'));
 
         let healthNode = document.getElementById('health');
         if (healthNode) healthNode.innerText = `HULL: ${player.health}/${player.maxHealth}`;
         let fuelNode = document.getElementById('fuel');
         if (fuelNode) fuelNode.innerText = `FUEL: ${Math.ceil(player.fuel)}%`;
         let nitroNode = document.getElementById('nitro');
-        if (nitroNode) nitroNode.innerText = `NITRO: ${Math.ceil(player.nitro)}% [SPACE]`;
+        if (nitroNode) {
+            if(player.nitroUnlocked) {
+                nitroNode.innerText = `NITRO: ${Math.ceil(player.nitro)}% [SPACE]`;
+                nitroNode.style.color = '#00e5ff';
+            } else {
+                nitroNode.innerText = `NITRO: LOCKED`;
+                nitroNode.style.color = '#555';
+            }
+        }
         let cargoNode = document.getElementById('cargo');
-        if (cargoNode) cargoNode.innerText = `CARGO: ${player.keysCollected}/5`;
+        if (cargoNode) cargoNode.innerText = `CARGO: ${player.keysCollected}/${player.targetCargo}`;
         let wantedNode = document.getElementById('wanted-display');
         if (wantedNode) wantedNode.innerText = wantedLevel > 0 ? `WANTED: ${'★'.repeat(Math.min(5, wantedLevel))}` : `WANTED: CHILL MODE 😎`;
 
-    } catch (e) {
-        console.error("Erreur Update: ", e);
-    }
+    } catch (e) { console.error("Erreur Update: ", e); }
 }
 
 function draw() {
@@ -450,11 +438,26 @@ function draw() {
             }
             
             for(let h of helicopters) h.draw(ctx, camera.x, camera.y);
-            
             drawMinimap();
         }
-        
-        if(gameState.startsWith('gameover') || gameState === 'win') {
+        else if(gameState === 'credits') {
+            // ECRAN DE CREDITS DE FIN
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#00ffcc';
+            ctx.font = 'bold 40px Courier';
+            ctx.textAlign = 'center';
+            ctx.fillText("Bien joue, t'es un vrai bandit", canvas.width/2, 80);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = '30px Courier';
+            for(let i=0; i<creditsText.length; i++) {
+                ctx.fillText(creditsText[i], canvas.width/2, creditsY + i*50);
+            }
+            creditsY -= 1.5; // Vitesse du défilement
+        }
+        else if(gameState.startsWith('gameover') || gameState === 'win') {
             showScreen('message-screen'); 
             radioStations.forEach(r=>r.audio.volume=0);
             
@@ -467,7 +470,6 @@ function draw() {
                 msgScreen.style.backgroundPosition = "center";
                 msgScreen.style.backgroundColor = "rgba(0,0,0,0.9)"; 
             }
-            
             if(title && sub) {
                 title.style.textShadow = "3px 3px 6px black";
                 sub.style.textShadow = "2px 2px 4px black";
@@ -475,19 +477,19 @@ function draw() {
                 sub.style.fontWeight = "bold";
 
                 if(gameState === 'gameover_crash') { 
-                    title.innerText = ""; sub.innerText = "Apprends a conduire SALOPE"; sub.style.color = "#ff1a1a";
+                    title.innerText = ""; sub.innerText = "Apprend a conduire"; sub.style.color = "#ff1a1a";
                     msgScreen.style.backgroundImage = "url('img/broken_end.png')";
                 } 
                 else if (gameState === 'gameover_arrest') { 
-                    title.innerText = ""; sub.innerText = "Tu t'es fait chopper, CHEHHHH"; sub.style.color = "#1a1aff";
+                    title.innerText = ""; sub.innerText = "Tu t'es chopper"; sub.style.color = "#1a1aff";
                     msgScreen.style.backgroundImage = "url('img/police_end.png')";
                 } 
                 else if (gameState === 'gameover_drown') { 
-                    title.innerText = ""; sub.innerText = "T'es tombe a l'eau MEC"; sub.style.color = "#1a8cff";
+                    title.innerText = ""; sub.innerText = "T'es tombe a l'eau"; sub.style.color = "#1a8cff";
                     msgScreen.style.backgroundImage = "url('img/water_end.png')";
                 }
                 else if (gameState === 'win') { 
-                    title.innerText = "Tout comme Tom, t'es riche, MEC"; title.style.color = "#00ff66"; sub.innerText = ""; 
+                    title.innerText = "GO-FAST RÉUSSI !"; title.style.color = "#00ff66"; sub.innerText = "Nouveau vehicule debloque au menu !"; 
                     msgScreen.style.backgroundImage = "url('img/win_end.png')";
                 }
             }
@@ -499,5 +501,22 @@ function draw() {
     }
     requestAnimationFrame(draw);
 }
+
+// Outil de Dev pour screen la map
+window.addEventListener('keydown', (e) => {
+    if(e.key.toLowerCase() === 'p' && gameState === 'playing') {
+        let exportCanvas = document.createElement('canvas');
+        exportCanvas.width = map.cols * map.tileSize; exportCanvas.height = map.rows * map.tileSize;
+        let eCtx = exportCanvas.getContext('2d');
+        let oldW = canvas.width; let oldH = canvas.height;
+        canvas.width = exportCanvas.width; canvas.height = exportCanvas.height;
+        map.draw(eCtx, 0, 0);
+        canvas.width = oldW; canvas.height = oldH;
+        let link = document.createElement('a');
+        link.download = 'GoFast_Map_Secrete.png';
+        link.href = exportCanvas.toDataURL('image/png');
+        link.click();
+    }
+});
 
 setInterval(update, 1000 / 60); draw();
