@@ -9,7 +9,7 @@ let map, player, civilians, police, helicopters, pedestrians, particles, bullets
 let gameState = 'menu', camera, invulnerabilityTimer;
 let escCooldown = 0, wantedLevel = 0;
 let creditsY = 0;
-let startTime = 0; // Pour le chrono
+let startTime = 0;
 
 const creditsText = [
     "Realisateur: Romain Contant", "Developpeur: Romain Contant", "Compositeur: Romain Contant and Tupac",
@@ -67,8 +67,8 @@ function applyVolumeSettings() {
 
 function updateMenuBestScore() {
     let best = localStorage.getItem('gofast_best_time');
-    let el = document.getElementById('best-score-display');
-    if(el) {
+    let els = document.querySelectorAll('.best-score-text');
+    els.forEach(el => {
         if(best) {
             let mins = Math.floor(best / 60000).toString().padStart(2, '0');
             let secs = Math.floor((best % 60000) / 1000).toString().padStart(2, '0');
@@ -77,7 +77,7 @@ function updateMenuBestScore() {
         } else {
             el.innerText = `Best Score: --:--.---`;
         }
-    }
+    });
 }
 
 function showScreen(id) {
@@ -91,7 +91,7 @@ function showScreen(id) {
     
     if(['main-menu', 'car-select', 'pause-screen', 'message-screen', 'loading-screen'].includes(id)) {
         startBgSlider();
-        if(id === 'main-menu') updateMenuBestScore();
+        if(id === 'main-menu' || id === 'car-select') updateMenuBestScore();
         if(id === 'car-select') {
             if(localStorage.getItem('gofast_unlocked_moto') === 'true') document.getElementById('card-moto').style.display = 'block';
             if(localStorage.getItem('gofast_unlocked_tank') === 'true') document.getElementById('card-tank').style.display = 'block';
@@ -155,7 +155,7 @@ function finishStartGame(carType) {
 
     player = new Player(px, py, carType);
     wantedLevel = 0; 
-    startTime = Date.now(); // DEMARRAGE DU CHRONO
+    startTime = Date.now(); 
     
     civilians = []; police = []; helicopters = []; pedestrians = []; particles = []; bullets = [];
     camera = { x: player.x - canvas.width / 2, y: player.y - canvas.height / 2 }; 
@@ -175,9 +175,8 @@ function finishStartGame(carType) {
 
 function rectIntersect(r1, r2) { return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y); }
 
-// --- GESTION CENTRALISÉE DES ECRANS DE FIN (Répare le bug visuel !) ---
 function triggerGameOver(reason) {
-    if (gameState.startsWith('gameover')) return; // Bloque la boucle
+    if (gameState.startsWith('gameover')) return; 
     gameState = 'gameover_' + reason;
     
     radioStations.forEach(r => r.audio.volume = 0);
@@ -224,7 +223,6 @@ function triggerGameOver(reason) {
 function triggerWin() {
     if (gameState === 'win' || gameState === 'credits') return;
     
-    // SAUVEGARDE DU SPEEDRUN
     let finalTime = Date.now() - startTime;
     let best = localStorage.getItem('gofast_best_time');
     if (!best || finalTime < parseInt(best)) {
@@ -396,7 +394,6 @@ function update() {
         if(gameState !== 'playing') return;
         if(typeof keys === 'undefined') return;
         
-        // GESTION DU CHRONOMETRE SPEEDRUN
         let currentTime = Date.now() - startTime;
         let timerNode = document.getElementById('timer-display');
         if (timerNode) {
@@ -426,12 +423,6 @@ function update() {
 
         let currentTile = map.getTileTypeAt(player.x, player.y);
         
-        // --- GESTION DU GARAGE : PLEIN D'ESSENCE ---
-        if (currentTile === 7 && player.fuel < 100) {
-            player.fuel = 100;
-            for(let i=0; i<2; i++) particles.push(new Particle(player.x, player.y, '#00ffcc'));
-        }
-
         player.underHeliSpotlight = false;
         for(let h of helicopters) {
             h.updateAI(player);
@@ -467,9 +458,11 @@ function update() {
         let pBounds = player.getBounds();
         for(let f of map.fuels) { if(!f.collected && Math.hypot(player.x - f.x, player.y - f.y) < 50) { f.collected = true; player.fuel = Math.min(100, player.fuel + f.amount); } }
         
+        // LA CLÉ DU GARAGE DONNE DU FUEL A 100% ET REPARE LE VEHICULE
         for(let w of map.wrenches) {
             if(!w.collected && Math.hypot(player.x - w.x, player.y - w.y) < 40) {
                 w.collected = true;
+                player.fuel = 100; // <--- LE PLEIN DU GARAGE EST ICI !
                 player.health = Math.min(player.maxHealth, player.health + 1);
                 for(let i=0; i<15; i++) particles.push(new Particle(player.x, player.y, '#00ffcc'));
             }
@@ -527,8 +520,13 @@ function update() {
             if(rectIntersect(pBounds, c.getBounds())) {
                 if(!c.dead) {
                     wantedLevel = Math.max(wantedLevel, 1); 
-                    applyDamage(1);
                     c.dead = true; c.vx = 0; c.vy = 0;
+                    if (player.carType !== 'tank_p') {
+                        applyDamage(1);
+                    } else {
+                        // TANK QUI ECRASE LES VOITURES (TUE SANS DÉGATS)
+                        for(let i=0; i<20; i++) particles.push(new Particle(c.x, c.y, '#ff6600'));
+                    }
                 }
                 let dx = player.x - c.x; let dy = player.y - c.y; let dist = Math.hypot(dx, dy);
                 if (dist > 0) { 
@@ -544,12 +542,18 @@ function update() {
 
             if(rectIntersect(pBounds, p.getBounds())) {
                 if(!p.dead) {
-                    if(p.type === 3) {
+                    if(p.type === 3 && player.carType !== 'tank_p') {
                         player.health = 0; 
                         triggerGameOver('tank'); 
                         break;
                     }
-                    applyDamage(1);
+                    if (player.carType === 'tank_p') {
+                        // TANK QUI ECRASE LA POLICE (TUE SANS DÉGATS)
+                        p.dead = true; p.vx = 0; p.vy = 0;
+                        for(let i=0; i<20; i++) particles.push(new Particle(p.x, p.y, '#ff3300'));
+                    } else {
+                        applyDamage(1);
+                    }
                 }
 
                 let dx = player.x - p.x; let dy = player.y - p.y; let dist = Math.hypot(dx, dy);
@@ -560,15 +564,17 @@ function update() {
                 player.speed *= 0.70; 
                 if(!p.dead) p.speed *= 0.50;
                 
-                if(!p.dead && Math.abs(player.speed) < 2.0) underArrest = true; 
+                if(!p.dead && Math.abs(player.speed) < 2.0 && player.carType !== 'tank_p') underArrest = true; 
             }
         }
         
+        let aw = document.getElementById('arrest-warning');
         if(underArrest) { 
-            player.arrestTimer++; 
+            player.arrestTimer++; if(aw) aw.style.display = 'block'; 
             if(player.arrestTimer > 100) triggerGameOver('arrest'); 
         } else { 
             player.arrestTimer = Math.max(0, player.arrestTimer - 2); 
+            if(player.arrestTimer === 0 && aw) aw.style.display = 'none'; 
         }
 
         if(player.keysCollected >= player.targetCargo) {
