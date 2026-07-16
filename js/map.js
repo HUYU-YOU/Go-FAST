@@ -116,20 +116,19 @@ class CityMap {
                 else if (type === 1) { 
                     let isV = (x % 3 === 0);
                     let isH = (y % 3 === 0);
-                    let img = null;
-                    if (isV && isH) img = ASSETS.crossroad;
-                    else if (isV) img = ASSETS.roadV;
-                    else img = ASSETS.roadH;
 
-                    // Ajout du fond de route SOUS les carrefours
+                    // Sous-couche couleur route pure
                     ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
 
-                    if (img && img.complete && img.naturalWidth > 0) {
-                        ctx.drawImage(img, px, py, this.tileSize, this.tileSize);
+                    if (isV && isH) {
+                        // Empilage des couches pour les intersections
+                        if (ASSETS.roadV && ASSETS.roadV.complete) ctx.drawImage(ASSETS.roadV, px, py, this.tileSize, this.tileSize);
+                        if (ASSETS.roadH && ASSETS.roadH.complete) ctx.drawImage(ASSETS.roadH, px, py, this.tileSize, this.tileSize);
+                        if (ASSETS.crossroad && ASSETS.crossroad.complete) ctx.drawImage(ASSETS.crossroad, px, py, this.tileSize, this.tileSize);
+                    } else if (isV) {
+                        if (ASSETS.roadV && ASSETS.roadV.complete) ctx.drawImage(ASSETS.roadV, px, py, this.tileSize, this.tileSize);
                     } else {
-                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.lineWidth = 2; ctx.setLineDash([20, 20]); ctx.beginPath();
-                        ctx.moveTo(px, py + this.tileSize/2); ctx.lineTo(px + this.tileSize, py + this.tileSize/2);
-                        ctx.moveTo(px + this.tileSize/2, py); ctx.lineTo(px + this.tileSize/2, py + this.tileSize); ctx.stroke(); ctx.setLineDash([]);
+                        if (ASSETS.roadH && ASSETS.roadH.complete) ctx.drawImage(ASSETS.roadH, px, py, this.tileSize, this.tileSize);
                     }
                 }
                 else if (type === 2) { 
@@ -142,17 +141,18 @@ class CityMap {
                 else if (type === 3) { 
                     let isV = (x % 3 === 0);
                     let isH = (y % 3 === 0);
-                    let img = null;
 
-                    if (isV && isH) img = ASSETS.crossroadBridge; 
-                    else if (isH) img = ASSETS.bridgeH;
-                    else img = ASSETS.bridgeV;
-
-                    // Ajout du fond de route SOUS les carrefours de ponts
                     ctx.fillStyle = '#444'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
 
-                    if (img && img.complete && img.naturalWidth > 0) {
-                        ctx.drawImage(img, px, py, this.tileSize, this.tileSize);
+                    if (isV && isH) {
+                        // Empilage pour pont croisement
+                        if (ASSETS.bridgeV && ASSETS.bridgeV.complete) ctx.drawImage(ASSETS.bridgeV, px, py, this.tileSize, this.tileSize);
+                        if (ASSETS.bridgeH && ASSETS.bridgeH.complete) ctx.drawImage(ASSETS.bridgeH, px, py, this.tileSize, this.tileSize);
+                        if (ASSETS.crossroadBridge && ASSETS.crossroadBridge.complete) ctx.drawImage(ASSETS.crossroadBridge, px, py, this.tileSize, this.tileSize);
+                    } else if (isH) {
+                        if (ASSETS.bridgeH && ASSETS.bridgeH.complete) ctx.drawImage(ASSETS.bridgeH, px, py, this.tileSize, this.tileSize);
+                    } else {
+                        if (ASSETS.bridgeV && ASSETS.bridgeV.complete) ctx.drawImage(ASSETS.bridgeV, px, py, this.tileSize, this.tileSize);
                     }
                 }
                 else if (type === 4) { 
