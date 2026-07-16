@@ -482,7 +482,7 @@ function update() {
         let cargoNode = document.getElementById('cargo');
         if (cargoNode) cargoNode.innerText = `CARGO: ${player.keysCollected}/${player.targetCargo}`;
         let wantedNode = document.getElementById('wanted-display');
-        if (wantedNode) wantedNode.innerText = wantedLevel > 0 ? `WANTED: ${'★'.repeat(Math.min(5, wantedLevel))}` : `WANTED: CHILL MODE 😎`;
+        if (wantedNode) wantedNode.innerText = wantedLevel > 0 ? `WANTED: ${'★'.repeat(Math.min(5, wantedLevel))}` : `CHILL MODE 😎`;
 
     } catch (e) { console.error("Erreur Update: ", e); }
 }
