@@ -1,82 +1,45 @@
-body {
-    margin: 0; background-color: #050508; color: white;
-    font-family: 'Courier New', Courier, monospace;
-    display: flex; justify-content: center; align-items: center;
-    height: 100vh; overflow: hidden;
-}
-#game-container {
-    position: relative; width: 1000px; height: 600px;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8); border: 2px solid #222;
-}
-
-/* On s'assure que le slider ne bloque pas les clics avec pointer-events: none */
-#bg-slider {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-    z-index: 4; 
-    background-size: cover; background-position: center;
-    transition: background-image 1.5s ease-in-out; 
-    pointer-events: none; display: block;
-}
-canvas { display: block; background-color: #1a1a20; position: relative; z-index: 2; }
-
-/* Audio block corrigé pour ne pas déborder */
-#global-audio-controls {
-    position: absolute; top: 20px; left: 20px; z-index: 100;
-    display: flex; align-items: center; gap: 10px; width: fit-content;
-    background: rgba(15, 15, 25, 0.8); padding: 5px 10px; border-radius: 6px; border: 1px solid #00ffcc;
-}
-#global-audio-controls button {
-    background: none; border: none; font-size: 20px; cursor: pointer; color: white; padding: 0;
-}
-#volume-slider { cursor: pointer; width: 80px; }
-
+body { margin: 0; background: #000; color: white; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+#game-container { position: relative; width: 1000px; height: 600px; border: 2px solid #222; overflow: hidden; }
+#bg-slider { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background-size: cover; background-position: center; transition: background-image 1.5s ease-in-out; }
+canvas { position: relative; z-index: 2; background-color: transparent; }
+#global-audio-controls { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.8); padding: 5px; border: 1px solid #00ffcc; border-radius: 6px; }
 #top-hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-#radio-wrapper {
-    position: absolute; left: 50%; transform: translateX(-50%); top: 15px;
-    background: rgba(15, 15, 25, 0.9); border: 2px solid #cc66ff;
-    padding: 8px 16px; border-radius: 6px; display: none; text-align: center;
-}
-#radio-display { color: #cc66ff; font-weight: bold; font-size: 14px; }
-#wanted-display {
-    position: absolute; right: 25px; top: 15px; color: #ff3333;
-    font-size: 24px; font-weight: bold; letter-spacing: 2px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-}
-#bottom-hud {
-    position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
-    width: 90%; background: rgba(10, 10, 15, 0.85); border: 1px solid #444;
-    border-radius: 6px; padding: 10px 20px; display: none;
-    justify-content: space-between; align-items: center; font-weight: bold; font-size: 13px; pointer-events: none; z-index: 5;
-}
-#bottom-hud #health { color: #00ffcc; }
-#bottom-hud #fuel { color: #ff5500; }
-#bottom-hud #nitro { color: #00e5ff; }
-#bottom-hud #cargo { color: #ffbb00; }
+#radio-wrapper { position: absolute; left: 50%; transform: translateX(-50%); top: 15px; background: rgba(0,0,0,0.9); padding: 10px 20px; border: 1px solid #cc66ff; border-radius: 8px; display: none; }
+#bottom-hud { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 8px; display: none; z-index: 5; font-weight: bold; width: 90%; justify-content: space-between; align-items: center;}
+.screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; backdrop-filter: blur(5px);}
+.screen-content { text-align: center; width: 100%; }
+#loading-bar-bg { width: 400px; height: 25px; border: 2px solid #00ffcc; background: black; border-radius: 12px; overflow: hidden; margin: 0 auto;}
+#loading-bar { width: 0%; height: 100%; background: #00ffcc; transition: width 0.2s; }
 
-.screen {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(10, 10, 15, 0.96); display: flex; flex-direction: column;
-    justify-content: center; align-items: center; z-index: 10;
+/* === NOUVEAU DESIGN DES CARTES DU SHOWROOM === */
+.car-card {
+    background: rgba(20, 20, 30, 0.65);
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 15px;
+    cursor: pointer;
+    width: 140px;
+    height: 190px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
-.screen.with-bg { background: rgba(10, 10, 15, 0.4); } 
-.screen-content {
-    position: relative; z-index: 15; display: flex; flex-direction: column;
-    align-items: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+.car-card:hover {
+    background: rgba(40, 40, 60, 0.85);
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.7);
 }
-.screen h1 { font-size: 55px; color: #00ffcc; margin-bottom: 25px; }
-.screen button {
-    padding: 12px 35px; font-size: 18px; background: #00ffcc; color: black;
-    font-weight: bold; border: none; cursor: pointer; border-radius: 4px; margin: 8px;
+.menu-car-img {
+    max-width: 95%;
+    max-height: 100px;
+    object-fit: contain;
+    filter: drop-shadow(0px 8px 6px rgba(0,0,0,0.7));
+    margin-bottom: auto; /* Pousse le texte vers le bas */
 }
-.car-roster { display: flex; gap: 20px; }
-.car-card { background: rgba(21, 21, 32, 0.9); border: 2px solid #333; padding: 20px; cursor: pointer; width: 200px; }
-
-#arrest-warning {
-    position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-    color: red; font-size: 40px; font-weight: bold; animation: blink 0.4s infinite; z-index: 6;
-}
-#heli-warning {
-    position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
-    color: #ffcc00; font-size: 20px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; z-index: 6;
-}
-@keyframes blink { 0% { opacity:0; } 50% { opacity:1; } 100% { opacity:0; } }
+button { transition: 0.2s ease; }
+button:hover { transform: scale(1.05); }
