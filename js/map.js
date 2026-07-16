@@ -1,5 +1,6 @@
 class CityMap {
-    constructor() {
+    constructor(carType) {
+        this.carType = carType || 'gti'; // La map sait maintenant quelle voiture est jouée
         this.tileSize = 250; 
         this.cols = 40;     
         this.rows = 40;     
@@ -39,7 +40,10 @@ class CityMap {
     }
 
     placeInteractables() {
-        for(let i=0; i<8; i++) {
+        // GESTION DYNAMIQUE DES CARGOS : 11 pour le Tank, 8 pour les autres
+        let nbCargos = (this.carType === 'tank_p') ? 11 : 8;
+        
+        for(let i=0; i<nbCargos; i++) {
             let kx, ky;
             do { kx = Math.floor(Math.random() * this.cols); ky = Math.floor(Math.random() * this.rows);
             } while (this.grid[ky][kx] !== 1 && this.grid[ky][kx] !== 4); 
@@ -117,11 +121,9 @@ class CityMap {
                     let isV = (x % 3 === 0);
                     let isH = (y % 3 === 0);
 
-                    // Sous-couche couleur route pure
                     ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
 
                     if (isV && isH) {
-                        // On dessine UNIQUEMENT le carrefour par-dessus le fond
                         if (ASSETS.crossroad && ASSETS.crossroad.complete) {
                             ctx.drawImage(ASSETS.crossroad, px, py, this.tileSize, this.tileSize);
                         }
@@ -145,7 +147,6 @@ class CityMap {
                     ctx.fillStyle = '#444'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
 
                     if (isV && isH) {
-                        // On dessine UNIQUEMENT le carrefour de pont
                         if (ASSETS.crossroadBridge && ASSETS.crossroadBridge.complete) {
                             ctx.drawImage(ASSETS.crossroadBridge, px, py, this.tileSize, this.tileSize);
                         }
