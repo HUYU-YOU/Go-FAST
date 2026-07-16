@@ -224,34 +224,70 @@ function alertOppositeCop() {
     }
 }
 
+// --- NOUVELLE MINIMAP CIRCULAIRE RADAR ---
 function drawMinimap() {
-    let mmSize = 250; let mmX = 30; let mmY = 105; 
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(mmX, mmY, mmSize, mmSize);
-    ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 3; ctx.strokeRect(mmX, mmY, mmSize, mmSize);
-    let viewRadius = 6000; let scale = mmSize / (viewRadius * 2);
+    let mmSize = 250; 
+    let mmRadius = mmSize / 2;
+    let mmX = 40 + mmRadius; // Un peu plus décalée du bord
+    let mmY = 105 + mmRadius; 
+    let viewRadius = 6000; 
+    let scale = mmSize / (viewRadius * 2);
 
-    function drawDot(worldX, worldY, color, size) {
+    ctx.save();
+    
+    // 1. Découpage circulaire (Masque d'écrêtage)
+    ctx.beginPath();
+    ctx.arc(mmX, mmY, mmRadius, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    
+    // 2. Fond de la minimap
+    ctx.fillStyle = 'rgba(15, 15, 25, 0.85)';
+    ctx.fillRect(mmX - mmRadius, mmY - mmRadius, mmSize, mmSize);
+
+    function drawDot(worldX, worldY, color, size, isCircle = false) {
         let dx = worldX - player.x; let dy = worldY - player.y;
-        if(Math.abs(dx) < viewRadius && Math.abs(dy) < viewRadius) {
-            ctx.fillStyle = color; ctx.fillRect(mmX + mmSize/2 + dx * scale - size/2, mmY + mmSize/2 + dy * scale - size/2, size, size);
+        if(Math.hypot(dx, dy) < viewRadius) {
+            ctx.fillStyle = color;
+            if (isCircle) {
+                ctx.beginPath(); ctx.arc(mmX + dx * scale, mmY + dy * scale, size/2, 0, Math.PI*2); ctx.fill();
+            } else {
+                ctx.fillRect(mmX + dx * scale - size/2, mmY + dy * scale - size/2, size, size);
+            }
         }
     }
 
+    // Dessin des éléments
     for(let y=0; y<map.rows; y++) {
         for(let x=0; x<map.cols; x++) {
             if(map.grid[y][x] === 2) drawDot(x * map.tileSize, y * map.tileSize, '#1a8cff', map.tileSize * scale);
-            if(map.grid[y][x] === 5) drawDot(x * map.tileSize, y * map.tileSize, '#cccccc', map.tileSize * scale); 
+            if(map.grid[y][x] === 5) drawDot(x * map.tileSize, y * map.tileSize, '#f1c40f', map.tileSize * scale); 
             if(map.grid[y][x] === 7) drawDot(x * map.tileSize, y * map.tileSize, '#00ffcc', map.tileSize * scale);
-            if(map.grid[y][x] === 8) drawDot(x * map.tileSize, y * map.tileSize, '#1a1aff', map.tileSize * scale);
+            if(map.grid[y][x] === 8) drawDot(x * map.tileSize, y * map.tileSize, '#3498db', map.tileSize * scale);
         }
     }
-    for(let f of map.fuels) if(!f.collected) drawDot(f.x, f.y, '#ff5500', 6);
-    for(let k of map.keys) if(!k.collected) drawDot(k.x, k.y, '#ffd700', 8);
-    
-    for(let p of police) drawDot(p.x, p.y, 'red', 6);
-    for(let h of helicopters) drawDot(h.x, h.y, 'magenta', 7);
+    for(let f of map.fuels) if(!f.collected) drawDot(f.x, f.y, '#e67e22', 8, true);
+    for(let k of map.keys) if(!k.collected) drawDot(k.x, k.y, '#f1c40f', 10, true);
+    for(let p of police) drawDot(p.x, p.y, '#e74c3c', 8, true);
+    for(let h of helicopters) drawDot(h.x, h.y, '#9b59b6', 10, true);
 
-    ctx.fillStyle = '#00ffcc'; ctx.beginPath(); ctx.arc(mmX + mmSize/2, mmY + mmSize/2, 6, 0, Math.PI*2); ctx.fill();
+    // Dessin du joueur au centre
+    ctx.fillStyle = '#2ecc71'; ctx.beginPath(); ctx.arc(mmX, mmY, 6, 0, Math.PI*2); ctx.fill();
+    // Ligne de direction du joueur
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(mmX, mmY); ctx.lineTo(mmX + Math.cos(player.angle) * 14, mmY + Math.sin(player.angle) * 14); ctx.stroke();
+
+    ctx.restore(); // Fin du masque d'écrêtage
+
+    // 3. Bordure néon autour du radar
+    ctx.beginPath();
+    ctx.arc(mmX, mmY, mmRadius, 0, Math.PI * 2);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#00ffcc';
+    ctx.shadowColor = '#00ffcc';
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+    ctx.shadowBlur = 0; // Reset
 }
 
 function update() {
@@ -271,7 +307,6 @@ function update() {
 
         if (keys.up || keys.down || keys.left || keys.right || (keys.nitro && player.nitroUnlocked)) player.fuel -= keys.nitro ? player.fuelDrainRate * 1.8 : player.fuelDrainRate;
         
-        // --- NOUVELLE CONDITION DE MORT: PLUS D'ESSENCE ---
         if(player.fuel <= 0) { 
             player.fuel = 0; 
             player.baseMaxSpeed = 0; 
@@ -361,7 +396,6 @@ function update() {
             if (wantedLevel === 2 && Math.hypot(player.x - p.x, player.y - p.y) < 300 && Math.random() < 0.01) alertOppositeCop();
 
             if(rectIntersect(pBounds, p.getBounds())) {
-                // --- NOUVELLE CONDITION DE MORT: ECRASÉ PAR LE TANK ---
                 if(p.type === 3) {
                     player.health = 0; 
                     gameState = 'gameover_tank'; 
@@ -452,11 +486,13 @@ function draw() {
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
+            // Le titre fixe en haut
             ctx.fillStyle = '#00ffcc';
             ctx.font = 'bold 40px Courier';
             ctx.textAlign = 'center';
             ctx.fillText("Bien joue, t'es un vrai bandit", canvas.width/2, 80);
             
+            // Le texte qui défile de bas en haut
             ctx.fillStyle = 'white';
             ctx.font = '30px Courier';
             for(let i=0; i<creditsText.length; i++) {
@@ -495,7 +531,6 @@ function draw() {
                     title.innerText = ""; sub.innerText = "T'es tombe a l'eau"; sub.style.color = "#1a8cff";
                     msgScreen.style.backgroundImage = "url('img/water_end.png')";
                 }
-                // --- AJOUT ECRAN DE FIN ESSENCE ET TANK ---
                 else if (gameState === 'gameover_fuel') { 
                     title.innerText = ""; sub.innerText = "Panne seche !"; sub.style.color = "#ff5500";
                     msgScreen.style.backgroundImage = "url('img/fuel_end.png')";
