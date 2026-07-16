@@ -121,11 +121,10 @@ class CityMap {
                     ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
 
                     if (isV && isH) {
-                        // 1. D'abord le carrefour en arrière-plan
-                        if (ASSETS.crossroad && ASSETS.crossroad.complete) ctx.drawImage(ASSETS.crossroad, px, py, this.tileSize, this.tileSize);
-                        // 2. Ensuite les routes qui viennent par-dessus (premier plan)
-                        if (ASSETS.roadV && ASSETS.roadV.complete) ctx.drawImage(ASSETS.roadV, px, py, this.tileSize, this.tileSize);
-                        if (ASSETS.roadH && ASSETS.roadH.complete) ctx.drawImage(ASSETS.roadH, px, py, this.tileSize, this.tileSize);
+                        // On dessine UNIQUEMENT le carrefour par-dessus le fond
+                        if (ASSETS.crossroad && ASSETS.crossroad.complete) {
+                            ctx.drawImage(ASSETS.crossroad, px, py, this.tileSize, this.tileSize);
+                        }
                     } else if (isV) {
                         if (ASSETS.roadV && ASSETS.roadV.complete) ctx.drawImage(ASSETS.roadV, px, py, this.tileSize, this.tileSize);
                     } else {
@@ -146,11 +145,10 @@ class CityMap {
                     ctx.fillStyle = '#444'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
 
                     if (isV && isH) {
-                        // 1. Carrefour de pont en arrière-plan
-                        if (ASSETS.crossroadBridge && ASSETS.crossroadBridge.complete) ctx.drawImage(ASSETS.crossroadBridge, px, py, this.tileSize, this.tileSize);
-                        // 2. Routes de pont par-dessus (premier plan)
-                        if (ASSETS.bridgeV && ASSETS.bridgeV.complete) ctx.drawImage(ASSETS.bridgeV, px, py, this.tileSize, this.tileSize);
-                        if (ASSETS.bridgeH && ASSETS.bridgeH.complete) ctx.drawImage(ASSETS.bridgeH, px, py, this.tileSize, this.tileSize);
+                        // On dessine UNIQUEMENT le carrefour de pont
+                        if (ASSETS.crossroadBridge && ASSETS.crossroadBridge.complete) {
+                            ctx.drawImage(ASSETS.crossroadBridge, px, py, this.tileSize, this.tileSize);
+                        }
                     } else if (isH) {
                         if (ASSETS.bridgeH && ASSETS.bridgeH.complete) ctx.drawImage(ASSETS.bridgeH, px, py, this.tileSize, this.tileSize);
                     } else {
