@@ -35,7 +35,7 @@
 
         <div id="main-menu" class="screen with-bg">
             <div class="screen-content">
-                <p class="best-score-text" style="color: #ffd700; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 2px 2px 4px #000;">Best Score: --:--.---</p>
+                <p id="global-best-score" style="color: #ffd700; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 2px 2px 4px #000;">Best Score: --:--.---</p>
                 <h1>GO-FAST</h1>
                 <p>Click anywhere to enable audio</p>
                 <button id="play-btn" onclick="showScreen('car-select')">PLAY</button>
@@ -44,25 +44,31 @@
 
         <div id="car-select" class="screen with-bg" style="display: none;">
             <div class="screen-content">
-                <p class="best-score-text" style="color: #ffd700; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 2px 2px 4px #000;">Best Score: --:--.---</p>
+                <p id="specific-best-score" style="color: #00ffcc; font-size: 26px; font-weight: bold; margin-bottom: 20px; text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 8px;">Record Véhicule: --:--.---</p>
                 <h2>SELECT YOUR RIDE</h2>
-                <div class="car-roster" style="flex-wrap: wrap; justify-content: center; max-width: 800px;">
-                    <div class="car-card" onclick="startGame('fer')"><h3>FERRARI</h3><p>Hull: 3 HP</p></div>
-                    <div class="car-card" onclick="startGame('gti')"><h3>GTI</h3><p>Hull: 5 HP</p></div>
-                    <div class="car-card" onclick="startGame('cab')"><h3>CABRIOLET</h3><p>Hull: 7 HP</p></div>
-                    
-                    <div class="car-card" id="card-moto" style="display: none; border-color: #00ffcc;" onclick="startGame('moto')">
+                <div class="car-roster" style="flex-wrap: wrap; justify-content: center; max-width: 800px; gap: 15px;">
+                    <div class="car-card" id="card-fer" onclick="selectCar('fer')" style="transition: 0.2s;">
+                        <h3>FERRARI</h3><p>Hull: 3 HP</p>
+                    </div>
+                    <div class="car-card" id="card-gti" onclick="selectCar('gti')" style="transition: 0.2s;">
+                        <h3>GTI</h3><p>Hull: 5 HP</p>
+                    </div>
+                    <div class="car-card" id="card-cab" onclick="selectCar('cab')" style="transition: 0.2s;">
+                        <h3>CABRIOLET</h3><p>Hull: 7 HP</p>
+                    </div>
+                    <div class="car-card" id="card-moto" style="display: none; border-color: #00ffcc; transition: 0.2s;" onclick="selectCar('moto')">
                         <h3 style="color:#00ffcc;">YAMAHA MOTO</h3>
                         <p>Speed: +20%</p>
                         <p>Hull: 4 HP</p>
                     </div>
-                    <div class="car-card" id="card-tank" style="display: none; border-color: #1e4620;" onclick="startGame('tank_p')">
+                    <div class="car-card" id="card-tank_p" style="display: none; border-color: #1e4620; transition: 0.2s;" onclick="selectCar('tank_p')">
                         <h3 style="color:#1e4620;">HEAVY TANK</h3>
                         <p>Hull: 20 HP</p>
                         <p>Objectif: 10 Cargos</p>
                     </div>
                 </div>
-                <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
+                <button onclick="confirmCarSelection()" style="margin-top:25px; padding: 15px 40px; font-size: 22px; background-color: #ffd700;">START GAME</button>
+                <button onclick="showScreen('main-menu')" style="margin-top:10px;">BACK</button>
             </div>
         </div>
 
