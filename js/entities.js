@@ -1,6 +1,6 @@
 const ASSETS = {
     civilians: [], peds: [], buildings: [], parks: [],
-    gti: [], cab: [], fer: [], cops: [],
+    gti: [], cab: [], fer: [], cops: [], moto: [], tank_p: [],
     police: new Image(), chu: new Image(), garage: new Image(), bank: new Image(),
     water: new Image(), roadH: new Image(), roadV: new Image(), crossroad: new Image(),
     bridgeH: new Image(), bridgeV: new Image(), crossroadBridge: new Image(),
@@ -16,7 +16,9 @@ for(let i=1; i<=5; i++) {
     ASSETS.gti.push(loadImg(`img/GTI${i}.png`));
     ASSETS.cab.push(loadImg(`img/CAB${i}.png`));
     ASSETS.fer.push(loadImg(`img/FER${i}.png`));
+    ASSETS.moto.push(loadImg(`img/moto${i}.png`)); // NOUVEAU
 }
+for(let i=1; i<=3; i++) ASSETS.tank_p.push(loadImg(`img/tank${i}.png`)); // NOUVEAU
 for(let i=1; i<=2; i++) ASSETS.cops.push(loadImg(`img/cops${i}.png`));
 for(let i=1; i<=3; i++) ASSETS.parks.push(loadImg(`img/parc${i}.png`));
 
@@ -76,16 +78,27 @@ class Car {
 class Player extends Car {
     constructor(x, y, carType) {
         let color = '#222'; 
-        let maxSpeed = 31.8; let maxHealth = 5; let fuelDrain = 0.04; 
+        let maxSpeed = 31.8; let maxHealth = 5; let targetCargo = 5;
+        
         if (carType === 'fer') { color = '#ffcc00'; maxSpeed = 37.0; maxHealth = 3; } 
         else if (carType === 'cab') { color = '#a32cc4'; maxSpeed = 26.5; maxHealth = 7; }
+        else if (carType === 'moto') { color = '#00ffcc'; maxSpeed = 38.2; maxHealth = 4; } // 20% + rapide
+        else if (carType === 'tank_p') { color = '#1e4620'; maxSpeed = 22.0; maxHealth = 20; targetCargo = 10; } // Objectif 10
         else { color = '#111111'; maxSpeed = 31.8; maxHealth = 5; }
 
-        super(x, y, 84, 48, color); 
+        let width = carType === 'tank_p' ? 130 : (carType === 'moto' ? 60 : 84);
+        let height = carType === 'tank_p' ? 76 : (carType === 'moto' ? 30 : 48);
+
+        super(x, y, width, height, color); 
         this.carType = carType || 'gti'; 
         this.baseMaxSpeed = maxSpeed; this.acceleration = 0.45; 
-        this.health = maxHealth; this.maxHealth = maxHealth; this.fuelDrainRate = fuelDrain;
-        this.fuel = 100; this.nitro = 0; this.keysCollected = 0; this.arrestTimer = 0;
+        this.health = maxHealth; this.maxHealth = maxHealth; this.targetCargo = targetCargo;
+        this.fuelDrainRate = 0.04; this.fuel = 100; 
+        
+        // Système Nitro (Rage Mode)
+        this.nitro = 0; this.nitroUnlocked = false; this.hitTimestamps = [];
+        
+        this.keysCollected = 0; this.arrestTimer = 0;
         this.underHeliSpotlight = false;
     }
     
@@ -94,8 +107,9 @@ class Player extends Car {
         if (currentTileType === 4) currentMax *= 0.5;
         if (this.underHeliSpotlight) currentMax *= 0.6; 
 
-        if(keysInput.nitro && this.nitro > 0 && this.fuel > 0) {
-            currentMax += 8; this.nitro -= 0.5; this.speed += this.acceleration * 1.8;
+        // Activation de la nitro si débloquée
+        if(keysInput.nitro && this.nitroUnlocked && this.nitro > 0 && this.fuel > 0) {
+            currentMax += 15; this.nitro -= 0.5; this.speed += this.acceleration * 2.5;
         } else {
             if (keysInput.up && this.fuel > 0) this.speed += this.acceleration;
             if (keysInput.down && this.fuel > 0) this.speed -= this.acceleration;
@@ -106,11 +120,13 @@ class Player extends Car {
 
         if (Math.abs(this.speed) > 0.5) {
             let dir = this.speed > 0 ? 1 : -1;
-            if (keysInput.left) this.angle -= this.turnSpeed * dir;
-            if (keysInput.right) this.angle += this.turnSpeed * dir;
+            // Moto et Tank tournent différemment
+            let turnModifier = this.carType === 'moto' ? 1.4 : (this.carType === 'tank_p' ? 0.6 : 1);
+            if (keysInput.left) this.angle -= (this.turnSpeed * turnModifier) * dir;
+            if (keysInput.right) this.angle += (this.turnSpeed * turnModifier) * dir;
         }
         
-        let driftFactor = 0.94; 
+        let driftFactor = this.carType === 'tank_p' ? 0.85 : 0.94; 
         this.vx = this.vx * driftFactor + Math.cos(this.angle) * this.speed * (1 - driftFactor);
         this.vy = this.vy * driftFactor + Math.sin(this.angle) * this.speed * (1 - driftFactor);
         
@@ -124,10 +140,17 @@ class Player extends Car {
         let img = null;
         
         if (arr && arr.length > 0) {
-            let state = Math.ceil((this.health / this.maxHealth) * 5);
-            let idx = 5 - state; 
-            idx = Math.max(0, Math.min(arr.length - 1, idx));
-            img = arr[idx];
+            if (this.carType === 'tank_p') {
+                // Règles du tank: 20 HP total. Peau 2 à 10hp. Peau 3 à 5hp.
+                if (this.health > 10) img = arr[0];
+                else if (this.health > 5) img = arr[1];
+                else img = arr[2];
+            } else {
+                let state = Math.ceil((this.health / this.maxHealth) * 5);
+                let idx = 5 - state; 
+                idx = Math.max(0, Math.min(arr.length - 1, idx));
+                img = arr[idx];
+            }
         }
         
         if(img && img.complete && img.naturalWidth > 0) {
@@ -314,6 +337,5 @@ class Pedestrian {
             ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
             ctx.restore();
         } 
-        // AUCUN ROND BEIGE PAR DEFAUT !
     }
 }
