@@ -53,6 +53,39 @@ const radioStations = [
     { name: "EpicUrien", audio: new Audio('audio/epicUrien.radio.mp3') }
 ];
 
+window.addEventListener('keydown', (e) => {
+    if(e.key.toLowerCase() === 'p' && gameState === 'playing') {
+        console.log("📸 Capture satellite de la map en cours (le jeu peut figer 2 secondes)...");
+        
+        // 1. Création d'un canvas géant en mémoire (10 000 x 10 000 pixels)
+        let exportCanvas = document.createElement('canvas');
+        exportCanvas.width = map.cols * map.tileSize;
+        exportCanvas.height = map.rows * map.tileSize;
+        let eCtx = exportCanvas.getContext('2d');
+        
+        // 2. Astuce : on trompe temporairement la fonction draw() en modifiant les variables globales
+        let oldW = canvas.width;
+        let oldH = canvas.height;
+        canvas.width = exportCanvas.width;
+        canvas.height = exportCanvas.height;
+        
+        // 3. On dessine toute la map (caméra fixée à 0,0) sur notre canvas géant
+        map.draw(eCtx, 0, 0);
+        
+        // 4. On remet la vraie taille du canvas pour ne pas casser le jeu
+        canvas.width = oldW;
+        canvas.height = oldH;
+        
+        // 5. Création et déclenchement automatique du téléchargement
+        let link = document.createElement('a');
+        link.download = 'GoFast_Map_Secrete.png';
+        link.href = exportCanvas.toDataURL('image/png');
+        link.click();
+        
+        console.log("✅ Map sauvegardée avec succès !");
+    }
+});
+
 window.addEventListener('click', () => {
     if(!audioInitialized) {
         audioInitialized = true; applyVolumeSettings();
