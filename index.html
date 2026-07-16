@@ -35,62 +35,63 @@
 
         <div id="main-menu" class="screen with-bg">
             <div class="screen-content">
-                <p id="global-best-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-bottom: 30px; text-shadow: 0 0 10px #ffcc00, 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 12px; border: 1px solid #ffd700; display: inline-block;">🏆 Best Score: --:--.---</p>
-                <h1 style="font-size: 75px; text-shadow: 0 0 20px #00ffcc; margin: 0 0 10px 0;">GO-FAST</h1>
-                <p style="font-size: 18px; color: #ccc; margin-bottom: 40px; text-shadow: 1px 1px 2px #000;">Click anywhere to enable audio</p>
-                <button id="play-btn" onclick="showScreen('car-select')" style="padding: 15px 50px; font-size: 26px; border-radius: 30px; background: #00ffcc; color: #000; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 0 15px #00ffcc;">PLAY</button>
+                <p id="global-best-score" style="color: #ffd700; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px #ffcc00, 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 12px; border: 1px solid #ffd700; display: inline-block;">🏆 Best Score: --:--.---</p>
+                <h1 style="font-size: 70px; text-shadow: 0 0 20px #00ffcc; margin: 0 0 10px 0;">GO-FAST</h1>
+                <p style="font-size: 16px; color: #ccc; margin-bottom: 30px; text-shadow: 1px 1px 2px #000;">Click anywhere to enable audio</p>
+                <button id="play-btn" onclick="showScreen('car-select')" style="padding: 12px 40px; font-size: 24px; border-radius: 30px; background: #00ffcc; color: #000; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 0 15px #00ffcc;">PLAY</button>
             </div>
         </div>
 
         <div id="car-select" class="screen with-bg" style="display: none;">
-            <div class="screen-content">
-                <!-- LE RECORD SPECIFIQUE EST ICI, TOUT EN HAUT -->
-                <p id="specific-best-score" style="color: #00ffcc; font-size: 24px; font-weight: bold; margin-bottom: 10px; text-shadow: 0 0 8px #00ffcc, 2px 2px 4px #000; background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 12px; border: 1px solid #00ffcc; display: inline-block;">⏱️ Record Véhicule: --:--.---</p>
+            <div class="screen-content" style="padding: 10px 0;">
                 
-                <h2 style="font-size: 32px; text-transform: uppercase; text-shadow: 2px 2px 4px black; margin: 5px 0 20px 0;">SELECT YOUR RIDE</h2>
+                <!-- Marges réduites pour que rien ne déborde -->
+                <p id="specific-best-score" style="color: #00ffcc; font-size: 20px; font-weight: bold; margin: 0 auto 5px auto; text-shadow: 0 0 8px #00ffcc, 2px 2px 4px #000; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 12px; border: 1px solid #00ffcc; display: inline-block;">⏱️ Record Véhicule: --:--.---</p>
                 
-                <div class="car-roster" style="display: flex; flex-wrap: wrap; justify-content: center; max-width: 900px; gap: 15px; margin: 0 auto 25px auto;">
+                <h2 style="font-size: 28px; text-transform: uppercase; text-shadow: 2px 2px 4px black; margin: 5px 0 15px 0;">SELECT YOUR RIDE</h2>
+                
+                <div class="car-roster" style="display: flex; flex-wrap: wrap; justify-content: center; max-width: 900px; gap: 12px; margin: 0 auto 15px auto;">
                     
                     <div class="car-card" id="card-fer" onclick="selectCar('fer')">
                         <img src="img/FER1.png" class="menu-car-img" alt="Ferrari">
-                        <h3 style="color:#ffcc00; margin:0 0 5px 0; font-size:18px;">FERRARI</h3>
-                        <p style="margin:0; color:#ddd; font-size:14px;">Hull: 3 HP</p>
-                        <p style="margin:2px 0 0 0; color:#ffcc00; font-size:12px; font-weight:bold;">Top Speed</p>
+                        <h3 style="color:#ffcc00; margin:0 0 5px 0; font-size:16px;">FERRARI</h3>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 3 HP</p>
+                        <p style="margin:2px 0 0 0; color:#ffcc00; font-size:11px; font-weight:bold;">Top Speed</p>
                     </div>
                     
                     <div class="car-card" id="card-gti" onclick="selectCar('gti')">
                         <img src="img/GTI1.png" class="menu-car-img" alt="GTI">
-                        <h3 style="color:#ffffff; margin:0 0 5px 0; font-size:18px;">GTI</h3>
-                        <p style="margin:0; color:#ddd; font-size:14px;">Hull: 5 HP</p>
-                        <p style="margin:2px 0 0 0; color:#aaa; font-size:12px; font-weight:bold;">Balanced</p>
+                        <h3 style="color:#ffffff; margin:0 0 5px 0; font-size:16px;">GTI</h3>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 5 HP</p>
+                        <p style="margin:2px 0 0 0; color:#aaa; font-size:11px; font-weight:bold;">Balanced</p>
                     </div>
                     
                     <div class="car-card" id="card-cab" onclick="selectCar('cab')">
                         <img src="img/CAB1.png" class="menu-car-img" alt="Cabriolet">
-                        <h3 style="color:#cc66ff; margin:0 0 5px 0; font-size:18px;">CABRIOLET</h3>
-                        <p style="margin:0; color:#ddd; font-size:14px;">Hull: 7 HP</p>
-                        <p style="margin:2px 0 0 0; color:#cc66ff; font-size:12px; font-weight:bold;">Armored</p>
+                        <h3 style="color:#cc66ff; margin:0 0 5px 0; font-size:16px;">CABRIOLET</h3>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 7 HP</p>
+                        <p style="margin:2px 0 0 0; color:#cc66ff; font-size:11px; font-weight:bold;">Armored</p>
                     </div>
                     
                     <div class="car-card" id="card-moto" style="display: none;" onclick="selectCar('moto')">
-                        <img src="img/moto1.png" class="menu-car-img" style="height: 80px;" alt="Moto">
-                        <h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px;">YAMAHA</h3>
-                        <p style="margin:0; color:#ddd; font-size:14px;">Hull: 4 HP</p>
-                        <p style="margin:2px 0 0 0; color:#00ffcc; font-size:12px; font-weight:bold;">+20% Speed</p>
+                        <img src="img/moto1.png" class="menu-car-img" style="height: 70px;" alt="Moto">
+                        <h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:16px;">YAMAHA</h3>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 4 HP</p>
+                        <p style="margin:2px 0 0 0; color:#00ffcc; font-size:11px; font-weight:bold;">+20% Speed</p>
                     </div>
                     
                     <div class="car-card" id="card-tank_p" style="display: none;" onclick="selectCar('tank_p')">
-                        <img src="img/tank1.png" class="menu-car-img" style="height: 120px;" alt="Tank">
-                        <h3 style="color:#55ff55; margin:0 0 5px 0; font-size:18px;">HEAVY TANK</h3>
-                        <p style="margin:0; color:#ddd; font-size:14px;">Hull: 20 HP</p>
-                        <p style="margin:2px 0 0 0; color:#ff3333; font-size:12px; font-weight:bold;">Obj: 10 Cargos</p>
+                        <img src="img/tank1.png" class="menu-car-img" style="height: 100px;" alt="Tank">
+                        <h3 style="color:#55ff55; margin:0 0 5px 0; font-size:16px;">HEAVY TANK</h3>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 20 HP</p>
+                        <p style="margin:2px 0 0 0; color:#ff3333; font-size:11px; font-weight:bold;">Obj: 10 Cargos</p>
                     </div>
                     
                 </div>
                 
-                <div style="display: flex; gap: 20px; align-items: center; justify-content: center;">
-                    <button onclick="showScreen('main-menu')" style="padding: 12px 30px; font-size: 18px; border-radius: 20px; background: rgba(0,0,0,0.5); border: 2px solid #fff; color: #fff; cursor: pointer;">BACK</button>
-                    <button onclick="confirmCarSelection()" style="padding: 15px 40px; font-size: 22px; font-weight: bold; background: #00ffcc; color: black; border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 0 15px #00ffcc;">START GAME</button>
+                <div style="display: flex; gap: 20px; align-items: center; justify-content: center; margin-top: 5px;">
+                    <button onclick="showScreen('main-menu')" style="padding: 10px 25px; font-size: 16px; border-radius: 20px; background: rgba(0,0,0,0.5); border: 2px solid #fff; color: #fff; cursor: pointer;">BACK</button>
+                    <button onclick="confirmCarSelection()" style="padding: 12px 30px; font-size: 20px; font-weight: bold; background: #00ffcc; color: black; border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 0 15px #00ffcc;">START GAME</button>
                 </div>
             </div>
         </div>
@@ -107,7 +108,7 @@
             <div class="screen-content">
                 <h1 id="msg-title"></h1>
                 <p id="msg-sub"></p>
-                <button onclick="location.reload()">MAIN MENU</button>
+                <button onclick="location.reload()" style="padding: 12px 30px; font-size: 20px; font-weight: bold; background: #00ffcc; color: black; border: none; border-radius: 30px; cursor: pointer; margin-top: 20px;">MAIN MENU</button>
             </div>
         </div>
     </div>
