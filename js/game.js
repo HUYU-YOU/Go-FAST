@@ -10,8 +10,7 @@ let gameState = 'menu', camera, invulnerabilityTimer;
 let escCooldown = 0, wantedLevel = 0;
 let creditsY = 0;
 let startTime = 0;
-
-let currentSelectedCar = 'gti'; // Présélection par défaut
+let currentSelectedCar = 'gti'; // Véhicule par défaut au menu
 
 const creditsText = [
     "Realisateur: Romain Contant", "Developpeur: Romain Contant", "Compositeur: Romain Contant and Tupac",
@@ -40,7 +39,6 @@ function stopBgSlider() {
 }
 
 let globalVolume = 0.5, isMuted = false, audioInitialized = false, radioCooldown = 0, currentRadioIndex = 0;
-
 const menuMusic = new Audio('audio/menu.mp3'); menuMusic.loop = true;
 const radioStations = [
     { name: "FunnyRadio", audio: new Audio('audio/FunnyRadio.mp3') },
@@ -75,28 +73,42 @@ function updateMenuBestScore() {
             let mins = Math.floor(best / 60000).toString().padStart(2, '0');
             let secs = Math.floor((best % 60000) / 1000).toString().padStart(2, '0');
             let ms = (best % 1000).toString().padStart(3, '0');
-            el.innerText = `Best Score: ${mins}:${secs}.${ms}`;
+            el.innerText = `🏆 Best Score: ${mins}:${secs}.${ms}`;
         } else {
-            el.innerText = `Best Score: --:--.---`;
+            el.innerText = `🏆 Best Score: --:--.---`;
         }
     }
 }
 
-// --- LOGIQUE DE PRÉSÉLECTION DE VÉHICULE ---
+// --- LOGIQUE VISUELLE DE SÉLECTION DE VÉHICULE ---
 window.selectCar = function(carType) {
     currentSelectedCar = carType;
     let cards = document.querySelectorAll('.car-card');
+    
+    // Remise à zéro visuelle
     cards.forEach(c => {
-        c.style.boxShadow = 'none';
-        c.style.transform = 'scale(1)';
+        c.style.boxShadow = '0 4px 15px rgba(0,0,0,0.5)';
+        c.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+        c.style.background = 'rgba(20, 20, 30, 0.65)';
+        c.style.transform = 'translateY(0) scale(1)';
     });
     
+    // Mise en surbrillance de la carte cliquée
     let card = document.getElementById('card-' + carType);
     if(card) {
-        card.style.boxShadow = '0 0 25px #00ffcc';
-        card.style.transform = 'scale(1.05)';
+        let glowColor = '#00ffcc';
+        if(carType === 'fer') glowColor = '#ffcc00';
+        if(carType === 'gti') glowColor = '#ffffff';
+        if(carType === 'cab') glowColor = '#cc66ff';
+        if(carType === 'tank_p') glowColor = '#55ff55';
+        
+        card.style.boxShadow = `0 0 25px ${glowColor}, inset 0 0 15px ${glowColor}`;
+        card.style.borderColor = glowColor;
+        card.style.background = 'rgba(40, 40, 60, 0.9)';
+        card.style.transform = 'translateY(-8px) scale(1.05)';
     }
     
+    // Mise à jour du chrono spécifique
     let bestSpecific = localStorage.getItem('gofast_best_time_' + carType);
     let el = document.getElementById('specific-best-score');
     if(el) {
@@ -104,13 +116,24 @@ window.selectCar = function(carType) {
             let mins = Math.floor(bestSpecific / 60000).toString().padStart(2, '0');
             let secs = Math.floor((bestSpecific % 60000) / 1000).toString().padStart(2, '0');
             let ms = (bestSpecific % 1000).toString().padStart(3, '0');
-            el.innerText = `Record Véhicule: ${mins}:${secs}.${ms}`;
+            el.innerText = `⏱️ Record Véhicule: ${mins}:${secs}.${ms}`;
         } else {
-            el.innerText = `Record Véhicule: --:--.---`;
+            el.innerText = `⏱️ Record Véhicule: --:--.---`;
         }
+        
+        // Adapte la couleur du chrono à la voiture
+        let scoreColor = '#00ffcc';
+        if(carType === 'fer') scoreColor = '#ffcc00';
+        if(carType === 'gti') scoreColor = '#ffffff';
+        if(carType === 'cab') scoreColor = '#cc66ff';
+        if(carType === 'tank_p') scoreColor = '#55ff55';
+        el.style.color = scoreColor;
+        el.style.borderColor = scoreColor;
+        el.style.textShadow = `0 0 8px ${scoreColor}, 2px 2px 4px #000`;
     }
 }
 
+// Clic final sur "Start Game"
 window.confirmCarSelection = function() {
     if(currentSelectedCar) {
         startGame(currentSelectedCar);
@@ -130,9 +153,9 @@ function showScreen(id) {
         startBgSlider();
         if(id === 'main-menu') updateMenuBestScore();
         if(id === 'car-select') {
-            if(localStorage.getItem('gofast_unlocked_moto') === 'true') document.getElementById('card-moto').style.display = 'block';
-            if(localStorage.getItem('gofast_unlocked_tank') === 'true') document.getElementById('card-tank_p').style.display = 'block';
-            selectCar(currentSelectedCar); // Présélectionne automatiquement le dernier joué
+            if(localStorage.getItem('gofast_unlocked_moto') === 'true') document.getElementById('card-moto').style.display = 'flex';
+            if(localStorage.getItem('gofast_unlocked_tank') === 'true') document.getElementById('card-tank_p').style.display = 'flex';
+            selectCar(currentSelectedCar); // Présélectionne le visuel
         }
     } else if (id === null && gameState === 'playing') { 
         stopBgSlider(); 
@@ -167,7 +190,6 @@ function startGame(carType) {
 
 function finishStartGame(carType) {
     map = new CityMap(); 
-    
     let px = map.bankSpawn.x * map.tileSize + map.tileSize / 2; 
     let py = map.bankSpawn.y * map.tileSize + map.tileSize / 2;
     
@@ -263,17 +285,11 @@ function triggerWin() {
     
     let finalTime = Date.now() - startTime;
     
-    // Sauvegarde score global
     let best = localStorage.getItem('gofast_best_time');
-    if (!best || finalTime < parseInt(best)) {
-        localStorage.setItem('gofast_best_time', finalTime.toString());
-    }
+    if (!best || finalTime < parseInt(best)) localStorage.setItem('gofast_best_time', finalTime.toString());
 
-    // Sauvegarde score de ce véhicule spécifique
     let bestSpecific = localStorage.getItem('gofast_best_time_' + player.carType);
-    if (!bestSpecific || finalTime < parseInt(bestSpecific)) {
-        localStorage.setItem('gofast_best_time_' + player.carType, finalTime.toString());
-    }
+    if (!bestSpecific || finalTime < parseInt(bestSpecific)) localStorage.setItem('gofast_best_time_' + player.carType, finalTime.toString());
 
     if (player.carType === 'tank_p') {
         gameState = 'credits';
@@ -507,7 +523,7 @@ function update() {
         for(let w of map.wrenches) {
             if(!w.collected && Math.hypot(player.x - w.x, player.y - w.y) < 40) {
                 w.collected = true;
-                player.fuel = 100; // GARAGE REPARE ET FAIT LE PLEIN
+                player.fuel = 100;
                 player.health = Math.min(player.maxHealth, player.health + 1);
                 for(let i=0; i<15; i++) particles.push(new Particle(player.x, player.y, '#00ffcc'));
             }
