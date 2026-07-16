@@ -11,6 +11,8 @@ let escCooldown = 0, wantedLevel = 0;
 let creditsY = 0;
 let startTime = 0;
 
+let currentSelectedCar = 'gti'; // Présélection par défaut
+
 const creditsText = [
     "Realisateur: Romain Contant", "Developpeur: Romain Contant", "Compositeur: Romain Contant and Tupac",
     "Graphisme: Romain Contant", "Musicien: Romain Contant and Hanz zimmer", "Producteur : Romain Contant",
@@ -67,8 +69,8 @@ function applyVolumeSettings() {
 
 function updateMenuBestScore() {
     let best = localStorage.getItem('gofast_best_time');
-    let els = document.querySelectorAll('.best-score-text');
-    els.forEach(el => {
+    let el = document.getElementById('global-best-score');
+    if(el) {
         if(best) {
             let mins = Math.floor(best / 60000).toString().padStart(2, '0');
             let secs = Math.floor((best % 60000) / 1000).toString().padStart(2, '0');
@@ -77,7 +79,42 @@ function updateMenuBestScore() {
         } else {
             el.innerText = `Best Score: --:--.---`;
         }
+    }
+}
+
+// --- LOGIQUE DE PRÉSÉLECTION DE VÉHICULE ---
+window.selectCar = function(carType) {
+    currentSelectedCar = carType;
+    let cards = document.querySelectorAll('.car-card');
+    cards.forEach(c => {
+        c.style.boxShadow = 'none';
+        c.style.transform = 'scale(1)';
     });
+    
+    let card = document.getElementById('card-' + carType);
+    if(card) {
+        card.style.boxShadow = '0 0 25px #00ffcc';
+        card.style.transform = 'scale(1.05)';
+    }
+    
+    let bestSpecific = localStorage.getItem('gofast_best_time_' + carType);
+    let el = document.getElementById('specific-best-score');
+    if(el) {
+        if(bestSpecific) {
+            let mins = Math.floor(bestSpecific / 60000).toString().padStart(2, '0');
+            let secs = Math.floor((bestSpecific % 60000) / 1000).toString().padStart(2, '0');
+            let ms = (bestSpecific % 1000).toString().padStart(3, '0');
+            el.innerText = `Record Véhicule: ${mins}:${secs}.${ms}`;
+        } else {
+            el.innerText = `Record Véhicule: --:--.---`;
+        }
+    }
+}
+
+window.confirmCarSelection = function() {
+    if(currentSelectedCar) {
+        startGame(currentSelectedCar);
+    }
 }
 
 function showScreen(id) {
@@ -91,10 +128,11 @@ function showScreen(id) {
     
     if(['main-menu', 'car-select', 'pause-screen', 'message-screen', 'loading-screen'].includes(id)) {
         startBgSlider();
-        if(id === 'main-menu' || id === 'car-select') updateMenuBestScore();
+        if(id === 'main-menu') updateMenuBestScore();
         if(id === 'car-select') {
             if(localStorage.getItem('gofast_unlocked_moto') === 'true') document.getElementById('card-moto').style.display = 'block';
-            if(localStorage.getItem('gofast_unlocked_tank') === 'true') document.getElementById('card-tank').style.display = 'block';
+            if(localStorage.getItem('gofast_unlocked_tank') === 'true') document.getElementById('card-tank_p').style.display = 'block';
+            selectCar(currentSelectedCar); // Présélectionne automatiquement le dernier joué
         }
     } else if (id === null && gameState === 'playing') { 
         stopBgSlider(); 
@@ -224,9 +262,17 @@ function triggerWin() {
     if (gameState === 'win' || gameState === 'credits') return;
     
     let finalTime = Date.now() - startTime;
+    
+    // Sauvegarde score global
     let best = localStorage.getItem('gofast_best_time');
     if (!best || finalTime < parseInt(best)) {
         localStorage.setItem('gofast_best_time', finalTime.toString());
+    }
+
+    // Sauvegarde score de ce véhicule spécifique
+    let bestSpecific = localStorage.getItem('gofast_best_time_' + player.carType);
+    if (!bestSpecific || finalTime < parseInt(bestSpecific)) {
+        localStorage.setItem('gofast_best_time_' + player.carType, finalTime.toString());
     }
 
     if (player.carType === 'tank_p') {
@@ -422,7 +468,7 @@ function update() {
         }
 
         let currentTile = map.getTileTypeAt(player.x, player.y);
-        
+
         player.underHeliSpotlight = false;
         for(let h of helicopters) {
             h.updateAI(player);
@@ -458,11 +504,10 @@ function update() {
         let pBounds = player.getBounds();
         for(let f of map.fuels) { if(!f.collected && Math.hypot(player.x - f.x, player.y - f.y) < 50) { f.collected = true; player.fuel = Math.min(100, player.fuel + f.amount); } }
         
-        // LA CLÉ DU GARAGE DONNE DU FUEL A 100% ET REPARE LE VEHICULE
         for(let w of map.wrenches) {
             if(!w.collected && Math.hypot(player.x - w.x, player.y - w.y) < 40) {
                 w.collected = true;
-                player.fuel = 100; // <--- LE PLEIN DU GARAGE EST ICI !
+                player.fuel = 100; // GARAGE REPARE ET FAIT LE PLEIN
                 player.health = Math.min(player.maxHealth, player.health + 1);
                 for(let i=0; i<15; i++) particles.push(new Particle(player.x, player.y, '#00ffcc'));
             }
@@ -524,7 +569,6 @@ function update() {
                     if (player.carType !== 'tank_p') {
                         applyDamage(1);
                     } else {
-                        // TANK QUI ECRASE LES VOITURES (TUE SANS DÉGATS)
                         for(let i=0; i<20; i++) particles.push(new Particle(c.x, c.y, '#ff6600'));
                     }
                 }
@@ -548,7 +592,6 @@ function update() {
                         break;
                     }
                     if (player.carType === 'tank_p') {
-                        // TANK QUI ECRASE LA POLICE (TUE SANS DÉGATS)
                         p.dead = true; p.vx = 0; p.vy = 0;
                         for(let i=0; i<20; i++) particles.push(new Particle(p.x, p.y, '#ff3300'));
                     } else {
@@ -568,13 +611,11 @@ function update() {
             }
         }
         
-        let aw = document.getElementById('arrest-warning');
         if(underArrest) { 
-            player.arrestTimer++; if(aw) aw.style.display = 'block'; 
+            player.arrestTimer++; 
             if(player.arrestTimer > 100) triggerGameOver('arrest'); 
         } else { 
             player.arrestTimer = Math.max(0, player.arrestTimer - 2); 
-            if(player.arrestTimer === 0 && aw) aw.style.display = 'none'; 
         }
 
         if(player.keysCollected >= player.targetCargo) {
@@ -590,10 +631,10 @@ function update() {
         let nitroNode = document.getElementById('nitro');
         if (nitroNode) {
             if(player.carType === 'tank_p') {
-                nitroNode.innerText = `SHOOT: [F] / [SHIFT]`;
+                nitroNode.innerText = `SHOOT: [RIGHT CLICK]`;
                 nitroNode.style.color = '#ffcc00';
             } else if(player.nitroUnlocked) {
-                nitroNode.innerText = `NITRO: ${Math.ceil(player.nitro)}% [SPACE]`;
+                nitroNode.innerText = `NITRO: ${Math.ceil(player.nitro)}% [RIGHT CLICK]`;
                 nitroNode.style.color = '#00e5ff';
             } else {
                 nitroNode.innerText = `NITRO: LOCKED`;
