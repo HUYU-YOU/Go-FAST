@@ -27,7 +27,7 @@
         <div id="bottom-hud">
             <span id="health">HULL: 5/5</span>
             <span id="fuel">FUEL: 100%</span>
-            <span id="nitro">NITRO: 0% [SPACE]</span>
+            <span id="nitro">NITRO: LOCKED</span>
             <span id="cargo">CARGO: 0/5</span>
         </div>
 
@@ -42,12 +42,24 @@
         <div id="car-select" class="screen with-bg" style="display: none;">
             <div class="screen-content">
                 <h2>SELECT YOUR RIDE</h2>
-                <div class="car-roster">
-                    <div class="car-card" onclick="startGame('fer')"><h3>FERRARI</h3></div>
-                    <div class="car-card" onclick="startGame('gti')"><h3>GTI</h3></div>
-                    <div class="car-card" onclick="startGame('cab')"><h3>CABRIOLET</h3></div>
+                <div class="car-roster" style="flex-wrap: wrap; justify-content: center; max-width: 800px;">
+                    <div class="car-card" onclick="startGame('fer')"><h3>FERRARI</h3><p>Hull: 3 HP</p></div>
+                    <div class="car-card" onclick="startGame('gti')"><h3>GTI</h3><p>Hull: 5 HP</p></div>
+                    <div class="car-card" onclick="startGame('cab')"><h3>CABRIOLET</h3><p>Hull: 7 HP</p></div>
+                    
+                    <!-- VÉHICULES À DÉBLOQUER -->
+                    <div class="car-card" id="card-moto" style="display: none; border-color: #00ffcc;" onclick="startGame('moto')">
+                        <h3 style="color:#00ffcc;">YAMAHA MOTO</h3>
+                        <p>Speed: +20%</p>
+                        <p>Hull: 4 HP</p>
+                    </div>
+                    <div class="car-card" id="card-tank" style="display: none; border-color: #1e4620;" onclick="startGame('tank_p')">
+                        <h3 style="color:#1e4620;">HEAVY TANK</h3>
+                        <p>Hull: 20 HP</p>
+                        <p>Objectif: 10 Cargos</p>
+                    </div>
                 </div>
-                <button onclick="showScreen('main-menu')">BACK</button>
+                <button onclick="showScreen('main-menu')" style="margin-top:20px;">BACK</button>
             </div>
         </div>
 
