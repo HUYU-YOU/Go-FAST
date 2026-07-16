@@ -218,30 +218,20 @@ function spawnEntities() {
 function alertOppositeCop() {
     if(wantedLevel >= 2) {
         let px = player.x + (player.vx > 0 ? 800 : -800); 
-        let py = player.y + (player.vy > 0 ? 800 : -800);
+        let py = player.y + (player.vx > 0 ? 800 : -800);
         let type = (wantedLevel >= 4) ? 3 : (wantedLevel === 3 ? 2 : 1);
         police.push(new Police(px, py, type, wantedLevel));
     }
 }
 
-// --- NOUVELLE MINIMAP CIRCULAIRE RADAR ---
 function drawMinimap() {
-    let mmSize = 250; 
-    let mmRadius = mmSize / 2;
-    let mmX = 40 + mmRadius; // Un peu plus décalée du bord
-    let mmY = 105 + mmRadius; 
-    let viewRadius = 6000; 
-    let scale = mmSize / (viewRadius * 2);
+    let mmSize = 250; let mmRadius = mmSize / 2;
+    let mmX = 40 + mmRadius; let mmY = 105 + mmRadius; 
+    let viewRadius = 6000; let scale = mmSize / (viewRadius * 2);
 
     ctx.save();
+    ctx.beginPath(); ctx.arc(mmX, mmY, mmRadius, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
     
-    // 1. Découpage circulaire (Masque d'écrêtage)
-    ctx.beginPath();
-    ctx.arc(mmX, mmY, mmRadius, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-    
-    // 2. Fond de la minimap
     ctx.fillStyle = 'rgba(15, 15, 25, 0.85)';
     ctx.fillRect(mmX - mmRadius, mmY - mmRadius, mmSize, mmSize);
 
@@ -257,7 +247,6 @@ function drawMinimap() {
         }
     }
 
-    // Dessin des éléments
     for(let y=0; y<map.rows; y++) {
         for(let x=0; x<map.cols; x++) {
             if(map.grid[y][x] === 2) drawDot(x * map.tileSize, y * map.tileSize, '#1a8cff', map.tileSize * scale);
@@ -271,23 +260,15 @@ function drawMinimap() {
     for(let p of police) drawDot(p.x, p.y, '#e74c3c', 8, true);
     for(let h of helicopters) drawDot(h.x, h.y, '#9b59b6', 10, true);
 
-    // Dessin du joueur au centre
     ctx.fillStyle = '#2ecc71'; ctx.beginPath(); ctx.arc(mmX, mmY, 6, 0, Math.PI*2); ctx.fill();
-    // Ligne de direction du joueur
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath();
     ctx.moveTo(mmX, mmY); ctx.lineTo(mmX + Math.cos(player.angle) * 14, mmY + Math.sin(player.angle) * 14); ctx.stroke();
 
-    ctx.restore(); // Fin du masque d'écrêtage
+    ctx.restore(); 
 
-    // 3. Bordure néon autour du radar
-    ctx.beginPath();
-    ctx.arc(mmX, mmY, mmRadius, 0, Math.PI * 2);
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = '#00ffcc';
-    ctx.shadowColor = '#00ffcc';
-    ctx.shadowBlur = 10;
-    ctx.stroke();
-    ctx.shadowBlur = 0; // Reset
+    ctx.beginPath(); ctx.arc(mmX, mmY, mmRadius, 0, Math.PI * 2);
+    ctx.lineWidth = 4; ctx.strokeStyle = '#00ffcc'; ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 10;
+    ctx.stroke(); ctx.shadowBlur = 0; 
 }
 
 function update() {
@@ -321,6 +302,12 @@ function update() {
         for(let h of helicopters) {
             h.updateAI(player);
             if(Math.hypot(player.x - h.x, player.y - h.y) < 200) player.underHeliSpotlight = true;
+        }
+
+        // --- SYSTEME DE TIR DU TANK PLAYER ---
+        if (keys.shoot && player.carType === 'tank_p' && player.shootCooldown <= 0) {
+            bullets.push(new Bullet(player.x, player.y, player.angle, 'player'));
+            player.shootCooldown = 40; // Temps de recharge
         }
 
         player.updatePlayer(keys, currentTile); spawnEntities();
@@ -372,46 +359,79 @@ function update() {
         }
 
         for(let b of bullets) {
-            if (rectIntersect(pBounds, b.getBounds())) {
-                b.life = 0; applyDamage(2);
+            if (b.life <= 0) continue;
+            
+            // Si c'est un boulet tiré par NOUS (Le tank joueur)
+            if (b.owner === 'player') {
+                let hit = false;
+                for (let c of civilians) {
+                    if (!c.dead && rectIntersect(c.getBounds(), b.getBounds())) {
+                        c.dead = true; c.vx = 0; c.vy = 0; b.life = 0; hit = true;
+                        for(let i=0; i<20; i++) particles.push(new Particle(c.x, c.y, '#ff6600'));
+                        break;
+                    }
+                }
+                if (!hit) {
+                    for (let p of police) {
+                        if (!p.dead && rectIntersect(p.getBounds(), b.getBounds())) {
+                            if (p.type !== 3) {
+                                p.dead = true; p.vx = 0; p.vy = 0;
+                                for(let i=0; i<25; i++) particles.push(new Particle(p.x, p.y, '#ff3300'));
+                            } else {
+                                // Tank de police ne meurt pas d'un coup, on fait juste une étincelle
+                                for(let i=0; i<5; i++) particles.push(new Particle(b.x, b.y, '#ffff00'));
+                            }
+                            b.life = 0; hit = true;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Balles de la police qui nous touchent
+                if (rectIntersect(pBounds, b.getBounds())) {
+                    b.life = 0; applyDamage(2);
+                }
             }
         }
 
         for(let c of civilians) {
             if(rectIntersect(pBounds, c.getBounds())) {
-                wantedLevel = Math.max(wantedLevel, 1); 
+                if(!c.dead) {
+                    wantedLevel = Math.max(wantedLevel, 1); 
+                    applyDamage(1);
+                    c.dead = true; c.vx = 0; c.vy = 0;
+                }
                 let dx = player.x - c.x; let dy = player.y - c.y; let dist = Math.hypot(dx, dy);
                 if (dist > 0) { 
                     player.vx += (dx / dist) * 2; player.vy += (dy / dist) * 2; 
-                    let pushX = -(dx / dist) * 2; let pushY = -(dy / dist) * 2;
-                    let cNextT = map.getTileTypeAt(c.x + pushX, c.y + pushY);
-                    if (![0, 5, 6, 8, 2].includes(cNextT)) { c.vx += pushX; c.vy += pushY; }
+                    c.vx -= (dx / dist) * 2; c.vy -= (dy / dist) * 2;
                 }
-                applyDamage(1);
             }
         }
 
         let underArrest = false;
         for(let p of police) {
-            if (wantedLevel === 2 && Math.hypot(player.x - p.x, player.y - p.y) < 300 && Math.random() < 0.01) alertOppositeCop();
+            if (!p.dead && wantedLevel === 2 && Math.hypot(player.x - p.x, player.y - p.y) < 300 && Math.random() < 0.01) alertOppositeCop();
 
             if(rectIntersect(pBounds, p.getBounds())) {
-                if(p.type === 3) {
-                    player.health = 0; 
-                    gameState = 'gameover_tank'; 
-                    break;
+                if(!p.dead) {
+                    if(p.type === 3) {
+                        player.health = 0; 
+                        gameState = 'gameover_tank'; 
+                        break;
+                    }
+                    applyDamage(1);
                 }
 
                 let dx = player.x - p.x; let dy = player.y - p.y; let dist = Math.hypot(dx, dy);
                 if (dist > 0) {
                     player.vx += (dx / dist) * 3; player.vy += (dy / dist) * 3;
-                    let pNextT = map.getTileTypeAt(p.x - (dx/dist)*3, p.y - (dy/dist)*3);
-                    if(![0, 5, 6, 7, 2].includes(pNextT)) { p.vx -= (dx / dist) * 3; p.vy -= (dy / dist) * 3; }
+                    p.vx -= (dx / dist) * 3; p.vy -= (dy / dist) * 3;
                 }
-                player.speed *= 0.70; p.speed *= 0.50;
-                applyDamage(1);
+                player.speed *= 0.70; 
+                if(!p.dead) p.speed *= 0.50;
                 
-                if(Math.abs(player.speed) < 2.0) underArrest = true; 
+                if(!p.dead && Math.abs(player.speed) < 2.0) underArrest = true; 
             }
         }
         
@@ -448,7 +468,10 @@ function update() {
         if (fuelNode) fuelNode.innerText = `FUEL: ${Math.ceil(player.fuel)}%`;
         let nitroNode = document.getElementById('nitro');
         if (nitroNode) {
-            if(player.nitroUnlocked) {
+            if(player.carType === 'tank_p') {
+                nitroNode.innerText = `SHOOT: [F] / [SHIFT]`;
+                nitroNode.style.color = '#ffcc00';
+            } else if(player.nitroUnlocked) {
                 nitroNode.innerText = `NITRO: ${Math.ceil(player.nitro)}% [SPACE]`;
                 nitroNode.style.color = '#00e5ff';
             } else {
@@ -486,13 +509,11 @@ function draw() {
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Le titre fixe en haut
             ctx.fillStyle = '#00ffcc';
             ctx.font = 'bold 40px Courier';
             ctx.textAlign = 'center';
             ctx.fillText("Bien joue, t'es un vrai bandit", canvas.width/2, 80);
             
-            // Le texte qui défile de bas en haut
             ctx.fillStyle = 'white';
             ctx.font = '30px Courier';
             for(let i=0; i<creditsText.length; i++) {
