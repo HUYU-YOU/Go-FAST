@@ -138,7 +138,7 @@ function finishStartGame(carType) {
     document.getElementById('bottom-hud').style.display = 'flex';
     document.getElementById('radio-wrapper').style.display = 'block';
     
-    currentRadioIndex = Math.floor(Math.random() * radioStations.length); // RADIO RANDOM AU DEBUT
+    currentRadioIndex = Math.floor(Math.random() * radioStations.length);
     if(audioInitialized) {
         menuMusic.pause(); radioStations.forEach(r => { r.audio.loop = true; r.audio.volume = 0; r.audio.play().catch(e=>console.log(e)); });
         applyVolumeSettings(); document.getElementById('radio-display').innerText = `📻 RADIO: ${radioStations[currentRadioIndex].name} [ENTER]`;
@@ -147,7 +147,6 @@ function finishStartGame(carType) {
 
 function rectIntersect(r1, r2) { return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y); }
 
-// NOUVEAU SYSTEME DE DEGATS PROPRE
 function applyDamage(amount) {
     if (invulnerabilityTimer > 0) return;
     
@@ -156,7 +155,6 @@ function applyDamage(amount) {
     player.speed *= 0.5; 
     for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#ff3300'));
     
-    // GESTION UNLOCK NITRO (3 coups en 5 secondes)
     let now = Date.now();
     player.hitTimestamps.push(now);
     player.hitTimestamps = player.hitTimestamps.filter(t => now - t <= 5000);
@@ -272,7 +270,15 @@ function update() {
         }
 
         if (keys.up || keys.down || keys.left || keys.right || (keys.nitro && player.nitroUnlocked)) player.fuel -= keys.nitro ? player.fuelDrainRate * 1.8 : player.fuelDrainRate;
-        if(player.fuel <= 0) { player.fuel = 0; player.baseMaxSpeed = 0; }
+        
+        // --- NOUVELLE CONDITION DE MORT: PLUS D'ESSENCE ---
+        if(player.fuel <= 0) { 
+            player.fuel = 0; 
+            player.baseMaxSpeed = 0; 
+            if (Math.abs(player.speed) < 0.1 && player.health > 0) {
+                gameState = 'gameover_fuel';
+            }
+        }
 
         let currentTile = map.getTileTypeAt(player.x, player.y);
         
@@ -355,8 +361,11 @@ function update() {
             if (wantedLevel === 2 && Math.hypot(player.x - p.x, player.y - p.y) < 300 && Math.random() < 0.01) alertOppositeCop();
 
             if(rectIntersect(pBounds, p.getBounds())) {
+                // --- NOUVELLE CONDITION DE MORT: ECRASÉ PAR LE TANK ---
                 if(p.type === 3) {
-                    player.health = 0; gameState = 'gameover_crash'; break;
+                    player.health = 0; 
+                    gameState = 'gameover_tank'; 
+                    break;
                 }
 
                 let dx = player.x - p.x; let dy = player.y - p.y; let dist = Math.hypot(dx, dy);
@@ -381,7 +390,6 @@ function update() {
             if(player.arrestTimer === 0 && aw) aw.style.display = 'none'; 
         }
 
-        // --- GESTION DE LA VICTOIRE ET DEBLOCAGES ---
         if(player.keysCollected >= player.targetCargo) {
             if (player.carType === 'tank_p') {
                 gameState = 'credits';
@@ -441,7 +449,6 @@ function draw() {
             drawMinimap();
         }
         else if(gameState === 'credits') {
-            // ECRAN DE CREDITS DE FIN
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -455,7 +462,7 @@ function draw() {
             for(let i=0; i<creditsText.length; i++) {
                 ctx.fillText(creditsText[i], canvas.width/2, creditsY + i*50);
             }
-            creditsY -= 1.5; // Vitesse du défilement
+            creditsY -= 1.5; 
         }
         else if(gameState.startsWith('gameover') || gameState === 'win') {
             showScreen('message-screen'); 
@@ -488,6 +495,15 @@ function draw() {
                     title.innerText = ""; sub.innerText = "T'es tombe a l'eau"; sub.style.color = "#1a8cff";
                     msgScreen.style.backgroundImage = "url('img/water_end.png')";
                 }
+                // --- AJOUT ECRAN DE FIN ESSENCE ET TANK ---
+                else if (gameState === 'gameover_fuel') { 
+                    title.innerText = ""; sub.innerText = "Panne seche !"; sub.style.color = "#ff5500";
+                    msgScreen.style.backgroundImage = "url('img/fuel_end.png')";
+                }
+                else if (gameState === 'gameover_tank') { 
+                    title.innerText = ""; sub.innerText = "Ecrase par un tank !"; sub.style.color = "#1e4620";
+                    msgScreen.style.backgroundImage = "url('img/tank_end.png')";
+                }
                 else if (gameState === 'win') { 
                     title.innerText = "GO-FAST RÉUSSI !"; title.style.color = "#00ff66"; sub.innerText = "Nouveau vehicule debloque au menu !"; 
                     msgScreen.style.backgroundImage = "url('img/win_end.png')";
@@ -496,13 +512,10 @@ function draw() {
         }
     } catch (e) {
         console.error("Erreur Draw: ", e);
-        ctx.fillStyle = "red"; ctx.font = "24px Courier";
-        ctx.fillText("ERREUR FATALE (F12 pour voir la console)", 20, 100);
     }
     requestAnimationFrame(draw);
 }
 
-// Outil de Dev pour screen la map
 window.addEventListener('keydown', (e) => {
     if(e.key.toLowerCase() === 'p' && gameState === 'playing') {
         let exportCanvas = document.createElement('canvas');
