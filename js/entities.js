@@ -16,9 +16,9 @@ for(let i=1; i<=5; i++) {
     ASSETS.gti.push(loadImg(`img/GTI${i}.png`));
     ASSETS.cab.push(loadImg(`img/CAB${i}.png`));
     ASSETS.fer.push(loadImg(`img/FER${i}.png`));
-    ASSETS.moto.push(loadImg(`img/moto${i}.png`)); // NOUVEAU
+    ASSETS.moto.push(loadImg(`img/moto${i}.png`));
 }
-for(let i=1; i<=3; i++) ASSETS.tank_p.push(loadImg(`img/tank${i}.png`)); // NOUVEAU
+for(let i=1; i<=3; i++) ASSETS.tank_p.push(loadImg(`img/tank${i}.png`));
 for(let i=1; i<=2; i++) ASSETS.cops.push(loadImg(`img/cops${i}.png`));
 for(let i=1; i<=3; i++) ASSETS.parks.push(loadImg(`img/parc${i}.png`));
 
@@ -82,12 +82,13 @@ class Player extends Car {
         
         if (carType === 'fer') { color = '#ffcc00'; maxSpeed = 37.0; maxHealth = 3; } 
         else if (carType === 'cab') { color = '#a32cc4'; maxSpeed = 26.5; maxHealth = 7; }
-        else if (carType === 'moto') { color = '#00ffcc'; maxSpeed = 38.2; maxHealth = 4; } // 20% + rapide
-        else if (carType === 'tank_p') { color = '#1e4620'; maxSpeed = 22.0; maxHealth = 20; targetCargo = 10; } // Objectif 10
+        else if (carType === 'moto') { color = '#00ffcc'; maxSpeed = 38.2; maxHealth = 4; } 
+        else if (carType === 'tank_p') { color = '#1e4620'; maxSpeed = 22.0; maxHealth = 20; targetCargo = 10; } 
         else { color = '#111111'; maxSpeed = 31.8; maxHealth = 5; }
 
-        let width = carType === 'tank_p' ? 130 : (carType === 'moto' ? 60 : 84);
-        let height = carType === 'tank_p' ? 76 : (carType === 'moto' ? 30 : 48);
+        // AJUSTEMENT DES TAILLES (Moto x2, Tank x2)
+        let width = carType === 'tank_p' ? 260 : (carType === 'moto' ? 120 : 84);
+        let height = carType === 'tank_p' ? 152 : (carType === 'moto' ? 60 : 48);
 
         super(x, y, width, height, color); 
         this.carType = carType || 'gti'; 
@@ -95,9 +96,7 @@ class Player extends Car {
         this.health = maxHealth; this.maxHealth = maxHealth; this.targetCargo = targetCargo;
         this.fuelDrainRate = 0.04; this.fuel = 100; 
         
-        // Système Nitro (Rage Mode)
         this.nitro = 0; this.nitroUnlocked = false; this.hitTimestamps = [];
-        
         this.keysCollected = 0; this.arrestTimer = 0;
         this.underHeliSpotlight = false;
     }
@@ -107,7 +106,6 @@ class Player extends Car {
         if (currentTileType === 4) currentMax *= 0.5;
         if (this.underHeliSpotlight) currentMax *= 0.6; 
 
-        // Activation de la nitro si débloquée
         if(keysInput.nitro && this.nitroUnlocked && this.nitro > 0 && this.fuel > 0) {
             currentMax += 15; this.nitro -= 0.5; this.speed += this.acceleration * 2.5;
         } else {
@@ -120,7 +118,6 @@ class Player extends Car {
 
         if (Math.abs(this.speed) > 0.5) {
             let dir = this.speed > 0 ? 1 : -1;
-            // Moto et Tank tournent différemment
             let turnModifier = this.carType === 'moto' ? 1.4 : (this.carType === 'tank_p' ? 0.6 : 1);
             if (keysInput.left) this.angle -= (this.turnSpeed * turnModifier) * dir;
             if (keysInput.right) this.angle += (this.turnSpeed * turnModifier) * dir;
@@ -141,7 +138,6 @@ class Player extends Car {
         
         if (arr && arr.length > 0) {
             if (this.carType === 'tank_p') {
-                // Règles du tank: 20 HP total. Peau 2 à 10hp. Peau 3 à 5hp.
                 if (this.health > 10) img = arr[0];
                 else if (this.health > 5) img = arr[1];
                 else img = arr[2];
@@ -207,7 +203,8 @@ class Police extends Car {
         let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
         if (type === 1) { this.maxSpeed = 7.3 + speedBoost; this.acceleration = 0.07; this.turnSpeed = 0.025; } 
         else if (type === 2) { this.w = 104; this.h = 60; this.maxSpeed = 5.9 + speedBoost; this.acceleration = 0.05; this.turnSpeed = 0.020; } 
-        else if (type === 3) { this.w = 130; this.h = 76; this.maxSpeed = 3.5 + speedBoost; this.acceleration = 0.02; this.turnSpeed = 0.012; }
+        // TAILLE TANK POLICE x2
+        else if (type === 3) { this.w = 260; this.h = 152; this.maxSpeed = 3.5 + speedBoost; this.acceleration = 0.02; this.turnSpeed = 0.012; }
     }
 
     updateAI(playerObj, mapObj, bulletsArr) {
