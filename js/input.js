@@ -24,20 +24,20 @@ window.addEventListener('keyup', (e) => {
     if(e.key === 'Escape') keys.esc = false;
 });
 
-// --- GESTION DU CLIC DROIT POUR TIRER / NITRO ---
+// --- GESTION DU CLIC GAUCHE POUR TIRER / NITRO ---
 window.addEventListener('mousedown', (e) => {
-    if (e.button === 2) { // 2 = Clic Droit
+    if (e.button === 0) { // 0 = Clic Gauche
         keys.nitro = true;
         keys.shoot = true;
     }
 });
 
 window.addEventListener('mouseup', (e) => {
-    if (e.button === 2) {
+    if (e.button === 0) { // 0 = Clic Gauche
         keys.nitro = false;
         keys.shoot = false;
     }
 });
 
-// Empêche le menu du navigateur de s'ouvrir quand on fait un clic droit
+// Empêche le menu du navigateur de s'ouvrir quand on fait un clic droit par accident
 window.addEventListener('contextmenu', e => e.preventDefault());
