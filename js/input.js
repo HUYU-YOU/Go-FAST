@@ -24,6 +24,7 @@ window.addEventListener('keyup', (e) => {
     if(e.key === 'Escape') keys.esc = false;
 });
 
+// --- GESTION DU CLIC DROIT POUR TIRER / NITRO ---
 window.addEventListener('mousedown', (e) => {
     if (e.button === 2) { // 2 = Clic Droit
         keys.nitro = true;
@@ -38,4 +39,5 @@ window.addEventListener('mouseup', (e) => {
     }
 });
 
+// Empêche le menu du navigateur de s'ouvrir quand on fait un clic droit
 window.addEventListener('contextmenu', e => e.preventDefault());
