@@ -121,10 +121,15 @@ class CityMap {
                     else if (isV) img = ASSETS.roadV;
                     else img = ASSETS.roadH;
 
+                    // Ajout du fond de route SOUS les carrefours
+                    ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
+
                     if (img && img.complete && img.naturalWidth > 0) {
                         ctx.drawImage(img, px, py, this.tileSize, this.tileSize);
                     } else {
-                        ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.lineWidth = 2; ctx.setLineDash([20, 20]); ctx.beginPath();
+                        ctx.moveTo(px, py + this.tileSize/2); ctx.lineTo(px + this.tileSize, py + this.tileSize/2);
+                        ctx.moveTo(px + this.tileSize/2, py); ctx.lineTo(px + this.tileSize/2, py + this.tileSize); ctx.stroke(); ctx.setLineDash([]);
                     }
                 }
                 else if (type === 2) { 
@@ -139,14 +144,15 @@ class CityMap {
                     let isH = (y % 3 === 0);
                     let img = null;
 
-                    if (isV && isH) img = ASSETS.crossroadBridge; // Carrefour pont
+                    if (isV && isH) img = ASSETS.crossroadBridge; 
                     else if (isH) img = ASSETS.bridgeH;
                     else img = ASSETS.bridgeV;
 
+                    // Ajout du fond de route SOUS les carrefours de ponts
+                    ctx.fillStyle = '#444'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
+
                     if (img && img.complete && img.naturalWidth > 0) {
                         ctx.drawImage(img, px, py, this.tileSize, this.tileSize);
-                    } else {
-                        ctx.fillStyle = '#444'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
                     }
                 }
                 else if (type === 4) { 
