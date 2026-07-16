@@ -274,9 +274,12 @@ class Police extends Car {
         else if (this.type === 3) img = ASSETS.tank;
 
         if (img && img.complete && img.naturalWidth > 0) {
-            ctx.rotate(Math.PI / 2);
+            // ROTATION CORRIGÉE POUR LE VAN DE POLICE
+            let rot = Math.PI / 2;
+            if (this.type === 2) rot = -Math.PI / 2; // On retourne le van de 180 degrés
+            ctx.rotate(rot);
             ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
-            ctx.rotate(-Math.PI / 2);
+            ctx.rotate(-rot);
         } else {
             this.color = (this.type === 3) ? '#1e4620' : '#1e3ee6';
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
@@ -289,7 +292,6 @@ class Police extends Car {
             ctx.fillStyle = (time % 300 < 150) ? 'blue' : 'red';
             ctx.fillRect(4, -this.h/2 + 4, 8, 8);
         }
-        
         ctx.restore();
     }
 }
