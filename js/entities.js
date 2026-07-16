@@ -88,7 +88,6 @@ class Player extends Car {
         else if (carType === 'tank_p') { color = '#1e4620'; maxSpeed = 22.0; maxHealth = 20; targetCargo = 10; } 
         else { color = '#111111'; maxSpeed = 31.8; maxHealth = 5; }
 
-        // Tank divisé par 2 (remis en 130x76)
         let width = carType === 'tank_p' ? 130 : (carType === 'moto' ? 120 : 84);
         let height = carType === 'tank_p' ? 76 : (carType === 'moto' ? 60 : 48);
 
@@ -173,7 +172,7 @@ class Civilian extends Car {
         this.angle = dirs[Math.floor(Math.random() * dirs.length)];
         this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed;
         this.skinIndex = Math.floor(Math.random() * 12); 
-        this.dead = false; // Ajout mort
+        this.dead = false;
     }
     updateAI(mapObj) {
         if(this.dead) {
@@ -193,18 +192,16 @@ class Civilian extends Car {
     }
     draw(ctx, camX, camY) {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
-        if (this.dead) {
-            ctx.fillStyle = '#222'; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
+        
+        let img = ASSETS.civilians[this.skinIndex];
+        if(img && img.complete && img.naturalWidth > 0) {
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
+            ctx.rotate(-Math.PI / 2);
         } else {
-            let img = ASSETS.civilians[this.skinIndex];
-            if(img && img.complete && img.naturalWidth > 0) {
-                ctx.rotate(Math.PI / 2);
-                ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
-                ctx.rotate(-Math.PI / 2);
-            } else {
-                ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-            }
+            ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         }
+        
         ctx.restore();
     }
 }
@@ -218,7 +215,6 @@ class Police extends Car {
         let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
         if (type === 1) { this.maxSpeed = 7.3 + speedBoost; this.acceleration = 0.07; this.turnSpeed = 0.025; } 
         else if (type === 2) { this.w = 104; this.h = 60; this.maxSpeed = 5.9 + speedBoost; this.acceleration = 0.05; this.turnSpeed = 0.020; } 
-        // Tank de police divisé par 2 (remis à 130x76)
         else if (type === 3) { this.w = 130; this.h = 76; this.maxSpeed = 3.5 + speedBoost; this.acceleration = 0.02; this.turnSpeed = 0.012; }
     }
 
@@ -261,8 +257,6 @@ class Police extends Car {
 
         super.update();
 
-        // if(mapObj.getTileTypeAt(this.x, this.y) === 2) { this.dead = true; } // Removed to avoid dying instantly on water edge
-
         if (this.type === 3) {
             this.shootTimer--;
             if (this.shootTimer <= 0 && Math.hypot(playerObj.x - this.x, playerObj.y - this.y) < 800) {
@@ -274,31 +268,28 @@ class Police extends Car {
     draw(ctx, camX, camY) {
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         
-        if (this.dead) {
-            ctx.fillStyle = '#222'; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-        } else {
-            let img = null;
-            if (this.type === 1) img = ASSETS.cops[this.skinIndex];
-            else if (this.type === 2) img = ASSETS.van;
-            else if (this.type === 3) img = ASSETS.tank;
+        let img = null;
+        if (this.type === 1) img = ASSETS.cops[this.skinIndex];
+        else if (this.type === 2) img = ASSETS.van;
+        else if (this.type === 3) img = ASSETS.tank;
 
-            if (img && img.complete && img.naturalWidth > 0) {
-                ctx.rotate(Math.PI / 2);
-                ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
-                ctx.rotate(-Math.PI / 2);
-            } else {
-                this.color = (this.type === 3) ? '#1e4620' : '#1e3ee6';
-                ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-            }
-            
-            if (this.type === 1 || this.type === 2) {
-                let time = Date.now();
-                ctx.fillStyle = (time % 300 < 150) ? 'red' : 'blue';
-                ctx.fillRect(-12, -this.h/2 + 4, 8, 8);
-                ctx.fillStyle = (time % 300 < 150) ? 'blue' : 'red';
-                ctx.fillRect(4, -this.h/2 + 4, 8, 8);
-            }
+        if (img && img.complete && img.naturalWidth > 0) {
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
+            ctx.rotate(-Math.PI / 2);
+        } else {
+            this.color = (this.type === 3) ? '#1e4620' : '#1e3ee6';
+            ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
         }
+        
+        if (!this.dead && (this.type === 1 || this.type === 2)) {
+            let time = Date.now();
+            ctx.fillStyle = (time % 300 < 150) ? 'red' : 'blue';
+            ctx.fillRect(-12, -this.h/2 + 4, 8, 8);
+            ctx.fillStyle = (time % 300 < 150) ? 'blue' : 'red';
+            ctx.fillRect(4, -this.h/2 + 4, 8, 8);
+        }
+        
         ctx.restore();
     }
 }
