@@ -1,4 +1,5 @@
 const keys = { up: false, down: false, left: false, right: false, nitro: false, shoot: false, enter: false, esc: false };
+const mouse = { x: 800, y: 480, active: false };
 
 window.addEventListener('keydown', (e) => {
     let k = e.key.toLowerCase();
@@ -7,9 +8,9 @@ window.addEventListener('keydown', (e) => {
     if(k === 'arrowleft' || k === 'q' || k === 'a') keys.left = true;
     if(k === 'arrowright' || k === 'd') keys.right = true;
     if(e.key === ' ') { keys.nitro = true; keys.shoot = true; e.preventDefault(); }
-    if(k === 'f' || e.key === 'Shift') { keys.shoot = true; keys.nitro = true; e.preventDefault(); }
-    if(e.key === 'Enter') { keys.enter = true; e.preventDefault(); }
-    if(e.key === 'Escape') { keys.esc = true; e.preventDefault(); }
+    if(k === 'f' || e.key === 'shift') { keys.shoot = true; keys.nitro = true; e.preventDefault(); }
+    if(e.key === 'enter') { keys.enter = true; e.preventDefault(); }
+    if(e.key === 'escape') { keys.esc = true; e.preventDefault(); }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -19,25 +20,32 @@ window.addEventListener('keyup', (e) => {
     if(k === 'arrowleft' || k === 'q' || k === 'a') keys.left = false;
     if(k === 'arrowright' || k === 'd') keys.right = false;
     if(e.key === ' ') { keys.nitro = false; keys.shoot = false; }
-    if(k === 'f' || e.key === 'Shift') { keys.shoot = false; keys.nitro = false; }
-    if(e.key === 'Enter') keys.enter = false;
-    if(e.key === 'Escape') keys.esc = false;
+    if(k === 'f' || e.key === 'shift') { keys.shoot = false; keys.nitro = false; }
+    if(e.key === 'enter') keys.enter = false;
+    if(e.key === 'escape') keys.esc = false;
 });
 
-// --- GESTION DU CLIC GAUCHE POUR TIRER / NITRO ---
+// Suivi de la souris (Ajusté à la taille réelle du Canvas interne 1600x960)
+window.addEventListener('mousemove', (e) => {
+    const canvas = document.getElementById('gameCanvas');
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    mouse.x = (e.clientX - rect.left) * scaleX;
+    mouse.y = (e.clientY - rect.top) * scaleY;
+    mouse.active = true;
+});
+
+// Clics de souris pour Piloter
 window.addEventListener('mousedown', (e) => {
-    if (e.button === 0) { // 0 = Clic Gauche
-        keys.nitro = true;
-        keys.shoot = true;
-    }
+    if (e.button === 0) { keys.up = true; keys.nitro = true; keys.shoot = true; } // Clic Gauche = Gaz + Action
+    if (e.button === 2) { keys.down = true; } // Clic Droit = Frein/Recul
 });
 
 window.addEventListener('mouseup', (e) => {
-    if (e.button === 0) { // 0 = Clic Gauche
-        keys.nitro = false;
-        keys.shoot = false;
-    }
+    if (e.button === 0) { keys.up = false; keys.nitro = false; keys.shoot = false; }
+    if (e.button === 2) { keys.down = false; }
 });
 
-// Empêche le menu du navigateur de s'ouvrir quand on fait un clic droit par accident
+// Bloque le menu contextuel du clic droit
 window.addEventListener('contextmenu', e => e.preventDefault());
