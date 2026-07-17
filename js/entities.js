@@ -55,13 +55,9 @@ class Bullet {
             ctx.translate(this.x - camX, this.y - camY);
             ctx.rotate(this.angle);
             
-            // Corps du missile
             ctx.fillStyle = '#666'; ctx.fillRect(-12, -4, 20, 8);
-            // Pointe du missile (rouge)
             ctx.fillStyle = '#cc0000'; ctx.beginPath(); ctx.moveTo(8, -4); ctx.lineTo(16, 0); ctx.lineTo(8, 4); ctx.fill();
-            // Ailettes
             ctx.fillStyle = '#333'; ctx.fillRect(-12, -7, 4, 14);
-            // Flamme arrière
             ctx.fillStyle = '#ff9900'; ctx.beginPath(); ctx.moveTo(-12, -3); ctx.lineTo(-20 + Math.random()*5, 0); ctx.lineTo(-12, 3); ctx.fill();
             
             ctx.restore();
@@ -237,7 +233,6 @@ class Police extends Car {
             this.spinTimer--; this.angle += 0.2; this.vx *= 0.92; this.vy *= 0.92; this.x += this.vx; this.y += this.vy; return; 
         }
 
-        // ANTICIPATION ANTI-EAU BEAUCOUP PLUS FORTE (150px)
         let lookAheadX = this.x + Math.cos(this.angle) * 150; 
         let lookAheadY = this.y + Math.sin(this.angle) * 150;
         let nextTile = mapObj.getTileTypeAt(lookAheadX, lookAheadY);
