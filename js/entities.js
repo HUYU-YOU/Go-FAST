@@ -22,20 +22,10 @@ for(let i=1; i<=3; i++) ASSETS.tank_p.push(loadImg(`img/tank${i}.png`));
 for(let i=1; i<=2; i++) ASSETS.cops.push(loadImg(`img/cops${i}.png`));
 for(let i=1; i<=3; i++) ASSETS.parks.push(loadImg(`img/parc${i}.png`));
 
-ASSETS.police = loadImg('img/police.png');
-ASSETS.chu = loadImg('img/chu.png');
-ASSETS.garage = loadImg('img/garage.png');
-ASSETS.bank = loadImg('img/bank.png');
-ASSETS.water = loadImg('img/eau.png');
-ASSETS.roadH = loadImg('img/roadhorizontale.png');
-ASSETS.roadV = loadImg('img/roadverticale.png');
-ASSETS.crossroad = loadImg('img/carrefour.png');
-ASSETS.bridgeH = loadImg('img/road_bridgehorizontale.png');
-ASSETS.bridgeV = loadImg('img/road_bridgeverticale.png');
-ASSETS.crossroadBridge = loadImg('img/carrefour_bridge.png');
-ASSETS.van = loadImg('img/Van.png');
-ASSETS.tank = loadImg('img/Tank.png');
-ASSETS.helico = loadImg('img/helico.png');
+ASSETS.police = loadImg('img/police.png'); ASSETS.chu = loadImg('img/chu.png'); ASSETS.garage = loadImg('img/garage.png'); ASSETS.bank = loadImg('img/bank.png');
+ASSETS.water = loadImg('img/eau.png'); ASSETS.roadH = loadImg('img/roadhorizontale.png'); ASSETS.roadV = loadImg('img/roadverticale.png');
+ASSETS.crossroad = loadImg('img/carrefour.png'); ASSETS.bridgeH = loadImg('img/road_bridgehorizontale.png'); ASSETS.bridgeV = loadImg('img/road_bridgeverticale.png');
+ASSETS.crossroadBridge = loadImg('img/carrefour_bridge.png'); ASSETS.van = loadImg('img/Van.png'); ASSETS.tank = loadImg('img/Tank.png'); ASSETS.helico = loadImg('img/helico.png');
 
 class Particle {
     constructor(x, y, color) {
@@ -52,23 +42,29 @@ class Particle {
 
 class Bullet {
     constructor(x, y, angle, owner = 'police') {
-        this.x = x; this.y = y; this.angle = angle;
-        this.owner = owner;
-        
-        // MODIF: Si c'est un tank (joueur ou police), vitesse énorme
+        this.x = x; this.y = y; this.angle = angle; this.owner = owner;
         this.speed = (owner.includes('tank')) ? 35 : 15; 
         this.life = 100;
-        this.vx = Math.cos(this.angle) * this.speed;
-        this.vy = Math.sin(this.angle) * this.speed;
+        this.vx = Math.cos(this.angle) * this.speed; this.vy = Math.sin(this.angle) * this.speed;
     }
     update() { this.x += this.vx; this.y += this.vy; this.life--; }
     draw(ctx, camX, camY) {
         if (this.owner.includes('tank')) {
-            // Effet Boule de feu pour le tank
-            ctx.fillStyle = '#ff3300'; // Traînée rouge/orange
-            ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 8, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#ffcc00'; 
-            ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 4, 0, Math.PI*2); ctx.fill();
+            // UN VRAI MISSILE !
+            ctx.save();
+            ctx.translate(this.x - camX, this.y - camY);
+            ctx.rotate(this.angle);
+            
+            // Corps du missile
+            ctx.fillStyle = '#666'; ctx.fillRect(-12, -4, 20, 8);
+            // Pointe du missile (rouge)
+            ctx.fillStyle = '#cc0000'; ctx.beginPath(); ctx.moveTo(8, -4); ctx.lineTo(16, 0); ctx.lineTo(8, 4); ctx.fill();
+            // Ailettes
+            ctx.fillStyle = '#333'; ctx.fillRect(-12, -7, 4, 14);
+            // Flamme arrière
+            ctx.fillStyle = '#ff9900'; ctx.beginPath(); ctx.moveTo(-12, -3); ctx.lineTo(-20 + Math.random()*5, 0); ctx.lineTo(-12, 3); ctx.fill();
+            
+            ctx.restore();
         } else {
             ctx.fillStyle = this.owner === 'player' ? '#00ffcc' : '#ffcc00'; 
             ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 6, 0, Math.PI*2); ctx.fill();
@@ -110,8 +106,7 @@ class Player extends Car {
         
         this.nitro = 0; this.nitroUnlocked = false; this.hitTimestamps = [];
         this.keysCollected = 0; this.arrestTimer = 0;
-        this.underHeliSpotlight = false;
-        this.shootCooldown = 0;
+        this.underHeliSpotlight = false; this.shootCooldown = 0;
     }
     
     updatePlayer(keysInput, currentTileType) {
@@ -132,13 +127,15 @@ class Player extends Car {
 
         let turnModifier = this.carType === 'moto' ? 1.4 : (this.carType === 'tank_p' ? 0.6 : 1);
         
-        // MODIF: Rotation prioritaire vers la souris si on l'a bougée
         if (window.mouse.active) {
-            // Calcul angle vers la souris (1600/2, 960/2 car le joueur est toujours au centre caméra)
-            let targetAngle = Math.atan2(window.mouse.y - 960/2, window.mouse.x - 1600/2);
-            let diff = targetAngle - this.angle;
-            while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
-            this.angle += Math.sign(diff) * Math.min(Math.abs(diff), this.turnSpeed * turnModifier * 1.5);
+            let dx = window.mouse.x - 1600 / 2;
+            let dy = window.mouse.y - 960 / 2;
+            if (Math.hypot(dx, dy) > 20) {
+                let targetAngle = Math.atan2(dy, dx);
+                let diff = targetAngle - this.angle;
+                while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
+                this.angle += Math.sign(diff) * Math.min(Math.abs(diff), this.turnSpeed * turnModifier * 2.5);
+            }
         } else if (Math.abs(this.speed) > 0.5) {
             let dir = this.speed > 0 ? 1 : -1;
             if (keysInput.left) this.angle -= (this.turnSpeed * turnModifier) * dir;
@@ -172,12 +169,9 @@ class Player extends Car {
         }
         
         if(img && img.complete && img.naturalWidth > 0) {
-            ctx.rotate(Math.PI / 2);
-            ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
-            ctx.rotate(-Math.PI / 2);
+            ctx.rotate(Math.PI / 2); ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w); ctx.rotate(-Math.PI / 2);
         } else {
             ctx.fillStyle = 'magenta'; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-            ctx.fillStyle = 'cyan'; ctx.fillRect(this.w/6, -this.h/2 + 2, this.w/4, this.h - 4);
         }
         ctx.restore();
     }
@@ -191,21 +185,19 @@ class Civilian extends Car {
         this.angle = dirs[Math.floor(Math.random() * dirs.length)];
         this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed;
         this.skinIndex = Math.floor(Math.random() * 12); 
-        this.dead = false; this.drowned = false; // Flag noyade
+        this.dead = false; this.drowned = false;
     }
     updateAI(mapObj) {
-        if(this.dead) {
-            this.vx *= 0.9; this.vy *= 0.9;
-            this.x += this.vx; this.y += this.vy;
-            return;
-        }
+        if(this.dead) { this.vx *= 0.9; this.vy *= 0.9; this.x += this.vx; this.y += this.vy; return; }
 
         let currentTile = mapObj.getTileTypeAt(this.x, this.y);
         if (currentTile === 2) { this.drowned = true; return; }
 
-        let nextX = this.x + this.vx * 2; let nextY = this.y + this.vy * 2;
-        let nextTile = mapObj.getTileTypeAt(nextX, nextY);
-        if([0, 2, 5, 6, 7, 8].includes(nextTile)) { // Ajout de 2 (eau) pour l'évitement
+        let lookAheadX = this.x + Math.cos(this.angle) * 120; 
+        let lookAheadY = this.y + Math.sin(this.angle) * 120;
+        let nextTile = mapObj.getTileTypeAt(lookAheadX, lookAheadY);
+        
+        if([0, 2, 5, 6, 7, 8].includes(nextTile)) { 
             this.angle += Math.PI/2;
             this.vx = Math.cos(this.angle) * this.maxSpeed;
             this.vy = Math.sin(this.angle) * this.maxSpeed;
@@ -215,16 +207,10 @@ class Civilian extends Car {
     draw(ctx, camX, camY) {
         if(this.drowned) return;
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
-        
         let img = ASSETS.civilians[this.skinIndex];
         if(img && img.complete && img.naturalWidth > 0) {
-            ctx.rotate(Math.PI / 2);
-            ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
-            ctx.rotate(-Math.PI / 2);
-        } else {
-            ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
-        }
-        
+            ctx.rotate(Math.PI / 2); ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w); ctx.rotate(-Math.PI / 2);
+        } else { ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h); }
         ctx.restore();
     }
 }
@@ -232,7 +218,7 @@ class Civilian extends Car {
 class Police extends Car {
     constructor(x, y, type, wantedLevel) {
         super(x, y, 80, 48, 'blue'); this.type = type; this.spinTimer = 0; this.shootTimer = 0;
-        this.dead = false; this.drowned = false; // Flag noyade
+        this.dead = false; this.drowned = false; 
         this.skinIndex = Math.floor(Math.random() * 2);
         
         let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
@@ -242,27 +228,24 @@ class Police extends Car {
     }
 
     updateAI(playerObj, mapObj, bulletsArr) {
-        if(this.dead) {
-            this.vx *= 0.9; this.vy *= 0.9;
-            this.x += this.vx; this.y += this.vy;
-            return;
-        }
+        if(this.dead) { this.vx *= 0.9; this.vy *= 0.9; this.x += this.vx; this.y += this.vy; return; }
 
         let currentTile = mapObj.getTileTypeAt(this.x, this.y);
         if (currentTile === 2) { this.drowned = true; return; }
 
         if(this.spinTimer > 0) { 
-            this.spinTimer--; this.angle += 0.2; this.vx *= 0.92; this.vy *= 0.92; 
-            this.x += this.vx; this.y += this.vy; return; 
+            this.spinTimer--; this.angle += 0.2; this.vx *= 0.92; this.vy *= 0.92; this.x += this.vx; this.y += this.vy; return; 
         }
 
-        let nextX = this.x + Math.cos(this.angle) * (this.speed * 4); // Anticipation
-        let nextY = this.y + Math.sin(this.angle) * (this.speed * 4);
-        let nextTile = mapObj.getTileTypeAt(nextX, nextY);
+        // ANTICIPATION ANTI-EAU BEAUCOUP PLUS FORTE (150px)
+        let lookAheadX = this.x + Math.cos(this.angle) * 150; 
+        let lookAheadY = this.y + Math.sin(this.angle) * 150;
+        let nextTile = mapObj.getTileTypeAt(lookAheadX, lookAheadY);
 
         let targetAngle;
-        if ([0, 2, 5, 6, 7].includes(nextTile)) { // Contourne l'eau et murs
-            targetAngle = this.angle + (Math.PI / 1.5); this.speed *= 0.8;
+        if ([0, 2, 5, 6, 7].includes(nextTile)) { 
+            targetAngle = this.angle + Math.PI/2; 
+            this.speed *= 0.6;
         } else {
             targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
         }
@@ -301,12 +284,9 @@ class Police extends Car {
         else if (this.type === 3) img = ASSETS.tank;
 
         if (img && img.complete && img.naturalWidth > 0) {
-            // ROTATION CORRIGÉE POUR LE VAN DE POLICE
             let rot = Math.PI / 2;
-            if (this.type === 2) rot = -Math.PI / 2; // On retourne le van
-            ctx.rotate(rot);
-            ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
-            ctx.rotate(-rot);
+            if (this.type === 2) rot = -Math.PI / 2; 
+            ctx.rotate(rot); ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w); ctx.rotate(-rot);
         } else {
             this.color = (this.type === 3) ? '#1e4620' : '#1e3ee6';
             ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
@@ -314,38 +294,25 @@ class Police extends Car {
         
         if (!this.dead && (this.type === 1 || this.type === 2)) {
             let time = Date.now();
-            ctx.fillStyle = (time % 300 < 150) ? 'red' : 'blue';
-            ctx.fillRect(-12, -this.h/2 + 4, 8, 8);
-            ctx.fillStyle = (time % 300 < 150) ? 'blue' : 'red';
-            ctx.fillRect(4, -this.h/2 + 4, 8, 8);
+            ctx.fillStyle = (time % 300 < 150) ? 'red' : 'blue'; ctx.fillRect(-12, -this.h/2 + 4, 8, 8);
+            ctx.fillStyle = (time % 300 < 150) ? 'blue' : 'red'; ctx.fillRect(4, -this.h/2 + 4, 8, 8);
         }
         ctx.restore();
     }
 }
 
 class Helicopter {
-    constructor(x, y) {
-        this.x = x; this.y = y; this.w = 100; this.h = 100; this.angle = 0; this.speed = 18;
-    }
+    constructor(x, y) { this.x = x; this.y = y; this.w = 100; this.h = 100; this.angle = 0; this.speed = 18; }
     updateAI(playerObj) {
         let targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
-        let diff = targetAngle - this.angle;
-        while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
+        let diff = targetAngle - this.angle; while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
         this.angle += Math.sign(diff) * Math.min(Math.abs(diff), 0.05);
         this.x += Math.cos(this.angle) * this.speed; this.y += Math.sin(this.angle) * this.speed;
     }
     draw(ctx, camX, camY) {
-        ctx.fillStyle = 'rgba(255, 255, 100, 0.3)';
-        ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 200, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255, 255, 100, 0.3)'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 200, 0, Math.PI*2); ctx.fill();
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
-        
-        if (ASSETS.helico && ASSETS.helico.complete && ASSETS.helico.naturalWidth > 0) {
-            ctx.rotate(Math.PI / 2);
-            ctx.drawImage(ASSETS.helico, -this.h/2, -this.w/2, this.h, this.w);
-            ctx.rotate(-Math.PI / 2);
-        } else {
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill();
-        }
+        if (ASSETS.helico && ASSETS.helico.complete) { ctx.rotate(Math.PI / 2); ctx.drawImage(ASSETS.helico, -this.h/2, -this.w/2, this.h, this.w); ctx.rotate(-Math.PI / 2); }
         ctx.restore();
     }
 }
@@ -354,28 +321,20 @@ class Pedestrian {
     constructor(x, y) {
         this.x = x; this.y = y; this.w = 40; this.h = 40; 
         this.vx = (Math.random() - 0.5); this.vy = (Math.random() - 0.5);
-        this.alive = true;
-        this.skinIndex = Math.floor(Math.random() * 13); 
+        this.alive = true; this.skinIndex = Math.floor(Math.random() * 13); 
     }
     update(mapObj) {
         if(!this.alive) return;
         let nextX = this.x + this.vx; let nextY = this.y + this.vy;
         let tile = mapObj.getTileTypeAt(nextX, nextY);
-        if(tile === 2) {
-            this.vx *= -1; this.vy *= -1; 
-        } else {
-            this.x += this.vx; this.y += this.vy;
-        }
+        if(tile === 2) { this.vx *= -1; this.vy *= -1; } else { this.x += this.vx; this.y += this.vy; }
         if(Math.random() < 0.02) { this.vx = (Math.random() - 0.5)*1.5; this.vy = (Math.random() - 0.5)*1.5; }
     }
     draw(ctx, camX, camY) {
-        if(!this.alive) return;
-        let img = ASSETS.peds[this.skinIndex];
-        if(img && img.complete && img.naturalWidth > 0) {
-            ctx.save();
-            ctx.translate(this.x - camX, this.y - camY);
-            let angle = Math.atan2(this.vy, this.vx);
-            ctx.rotate(angle + Math.PI / 2);
+        if(!this.alive) return; let img = ASSETS.peds[this.skinIndex];
+        if(img && img.complete) {
+            ctx.save(); ctx.translate(this.x - camX, this.y - camY);
+            ctx.rotate(Math.atan2(this.vy, this.vx) + Math.PI / 2);
             ctx.drawImage(img, -this.w/2, -this.h/2, this.w, this.h);
             ctx.restore();
         } 
