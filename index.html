@@ -9,7 +9,6 @@
     <div id="game-container">
         <div id="bg-slider"></div>
         
-        <!-- Le vrai canvas interne fait 1600x960, redimensionné en CSS à 1000x600 -->
         <canvas id="gameCanvas" width="1600" height="960"></canvas>
         
         <!-- HUD SUPÉRIEUR -->
@@ -20,6 +19,7 @@
                         <button id="mute-btn" onclick="toggleMute()">🔊</button>
                         <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
                     </div>
+                    <!-- Corrigé: Affichage dynamique en jeu -->
                     <div id="wanted-display" class="hud-box glass-hud neon-red" style="display: none;">WANTED: ★</div>
                 </div>
 
@@ -45,12 +45,12 @@
             <div class="screen-content">
                 <p id="global-best-score" class="glass-panel neon-gold-text">🏆 Best Score: --:--.---</p>
                 <h1 class="main-title neon-cyan-text">GO-FAST</h1>
-                <p class="subtitle">Click anywhere to enable audio</p>
+                <p class="subtitle">Visée Souris | Clic Gauche = Accélérer/Tirer | Clic Droit = Freiner</p>
                 <button id="play-btn" class="btn-primary" onclick="showScreen('car-select')">PLAY</button>
             </div>
         </div>
 
-        <!-- SÉLECTION VÉHICULE (Glassmorphism) -->
+        <!-- SÉLECTION VÉHICULE -->
         <div id="car-select" class="screen" style="display: none;">
             <div class="screen-content">
                 <p id="specific-best-score" class="glass-panel neon-cyan-text">⏱️ Record Véhicule: --:--.---</p>
