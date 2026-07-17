@@ -1,219 +1,159 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GoFast</title>
+    <title>GoFast - Ultimate Edition</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        body { margin: 0; padding: 0; background-color: #222; overflow: hidden; font-family: 'Courier New', monospace; color: white; }
-        #gameCanvas { display: block; border: 2px solid #555; }
-        #hud { position: absolute; top: 10px; left: 10px; pointer-events: none; }
-        #hud-top { position: absolute; top: 10px; right: 10px; display: flex; align-items: center; gap: 10px; }
-        .hud-item { background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 4px; font-weight: bold; }
-        .wanted-label { color: black; background: #ffff00; text-shadow: 1px 1px 0 #000; }
-        #timer { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 24px; color: #ffff00;}
-        #wanted { display: none; } /* Caché par défaut dans le menu */
+        /* CSS DÉDIÉ AU HUD POUR ZÉRO CHEVAUCHEMENT */
+        #hud-top-bar {
+            position: absolute;
+            top: 15px; left: 15px; right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none; /* Laisse les clics passer vers le jeu */
+            z-index: 100;
+        }
+        .hud-box {
+            background: rgba(0,0,0,0.85);
+            padding: 5px 15px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            height: 26px;
+            font-weight: bold;
+            pointer-events: auto; /* Permet de cliquer sur le volume */
+        }
+        #hud-left-group { display: flex; gap: 15px; }
+        
+        #global-audio-controls { border: 1px solid #00ffcc; padding: 5px 10px; }
+        #wanted-display { border: 1px solid #ff3333; color: #ff3333; box-shadow: 0 0 10px rgba(255,51,51,0.5); font-size: 18px; }
+        
+        /* Centrage absolu du timer */
+        #timer-display {
+            border: 1px solid #00ffcc; color: #00ffcc; font-size: 20px;
+            position: absolute; left: 50%; transform: translateX(-50%);
+            display: none;
+        }
+        
+        #radio-wrapper { border: 1px solid #cc66ff; display: none; }
+        #radio-display { color: #cc66ff; }
     </style>
 </head>
 <body>
+    <div id="game-container">
+        <div id="bg-slider"></div>
 
-    <div id="hud">
-        <div class="hud-item" id="health">Hull: 5/5</div>
-        <div class="hud-item" id="fuel">Fuel: 100%</div>
-        <div class="hud-item" id="nitro" style="color: #00e5ff;">NITRO: LOCKED</div>
-        <div class="hud-item" id="cargo" style="color: #f1c40f;">Cargo: 0/5</div>
+        <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        
+        <!-- HUD SUPÉRIEUR (Système Flexbox Propre) -->
+        <div id="top-hud">
+            <div id="hud-top-bar">
+                <!-- Gauche : Volume + Wanted -->
+                <div id="hud-left-group">
+                    <div id="global-audio-controls" class="hud-box">
+                        <button id="mute-btn" onclick="toggleMute()" style="background:none; border:none; color:white; cursor:pointer; font-size:16px;">🔊</button>
+                        <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
+                    </div>
+                    <!-- AJOUT DE display:none ICI -->
+                    <div id="wanted-display" class="hud-box" style="display: none;">WANTED: ★</div>
+                </div>
+
+                <!-- Centre : Timer -->
+                <div id="timer-display" class="hud-box">TIME: 00:00.000</div>
+
+                <!-- Droite : Radio -->
+                <div id="radio-wrapper" class="hud-box">
+                    <span id="radio-display">📻 RADIO: OFF</span>
+                </div>
+            </div>
+
+            <div id="minimap-container"></div>
+        </div>
+
+        <div id="bottom-hud">
+            <span id="health" style="color:#00ffcc;">HULL: 5/5</span>
+            <span id="fuel" style="color:#ff5500;">FUEL: 100%</span>
+            <span id="nitro" style="color:#555;">NITRO: LOCKED</span>
+            <span id="cargo" style="color:#ffd700;">CARGO: 0/5</span>
+        </div>
+
+        <!-- MENU PRINCIPAL -->
+        <div id="main-menu" class="screen with-bg">
+            <div class="screen-content">
+                <p id="global-best-score" style="color: #ffd700; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px #ffcc00, 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 12px; border: 1px solid #ffd700; display: inline-block;">🏆 Best Score: --:--.---</p>
+                <h1 style="font-size: 70px; text-shadow: 0 0 20px #00ffcc; margin: 0 0 10px 0;">GO-FAST</h1>
+                <p style="font-size: 16px; color: #ccc; margin-bottom: 30px; text-shadow: 1px 1px 2px #000;">Click anywhere to enable audio</p>
+                <button id="play-btn" onclick="showScreen('car-select')" style="padding: 12px 40px; font-size: 24px; border-radius: 30px; background: #00ffcc; color: #000; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 0 15px #00ffcc;">PLAY</button>
+            </div>
+        </div>
+
+        <div id="car-select" class="screen with-bg" style="display: none;">
+            <div class="screen-content" style="padding: 10px 0;">
+                
+                <p id="specific-best-score" style="color: #00ffcc; font-size: 20px; font-weight: bold; margin: 0 auto 15px auto; text-shadow: 0 0 8px #00ffcc, 2px 2px 4px #000; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 12px; border: 1px solid #00ffcc; display: inline-block;">⏱️ Record Véhicule: --:--.---</p>
+                
+                <div class="car-roster" style="display: flex; flex-wrap: wrap; justify-content: center; max-width: 900px; gap: 12px; margin: 0 auto 15px auto;">
+                    <div class="car-card" id="card-fer" onclick="selectCar('fer')">
+                        <img src="img/FER1.png" class="menu-car-img" alt="Ferrari">
+                        <h3 style="color:#ffcc00; margin:0 0 5px 0; font-size:16px;">FERRARI</h3>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 3 HP</p>
+                        <p style="margin:2px 0 0 0; color:#ffcc00; font-size:11px; font-weight:bold;">Top Speed</p>
+                    </div>
+                    <div class="car-card" id="card-cab" onclick="selectCar('cab')">
+                        <img src="img/CAB1.png" class="menu-car-img" alt="Cabriolet">
+                        <h3 style="color:#cc66ff; margin:0 0 5px 0; font-size:16px;">CABRIOLET</h3>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 7 HP</p>
+                        <p style="margin:2px 0 0 0; color:#cc66ff; font-size:11px; font-weight:bold;">Armored</p>
+                    </div>
+                    <div class="car-card" id="card-gti" onclick="selectCar('gti')">
+                        <img src="img/GTI1.png" class="menu-car-img" alt="GTI">
+                        <h3 style="color:#ffffff; margin:0 0 5px 0; font-size:16px;">GTI</h3>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 5 HP</p>
+                        <p style="margin:2px 0 0 0; color:#aaa; font-size:11px; font-weight:bold;">Balanced</p>
+                    </div>
+                    <div class="car-card" id="card-moto" style="display: none;" onclick="selectCar('moto')">
+                        <img src="img/moto1.png" class="menu-car-img" style="height: 70px;" alt="Moto">
+                        <h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:16px;">YAMAHA</h3>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 4 HP</p>
+                        <p style="margin:2px 0 0 0; color:#00ffcc; font-size:11px; font-weight:bold;">+20% Speed</p>
+                    </div>
+                    <div class="car-card" id="card-tank_p" style="display: none;" onclick="selectCar('tank_p')">
+                        <img src="img/tank1.png" class="menu-car-img" style="height: 100px;" alt="Tank">
+                        <h3 style="color:#55ff55; margin:0 0 5px 0; font-size:16px;">HEAVY TANK</h3>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 20 HP</p>
+                        <p style="margin:2px 0 0 0; color:#ff3333; font-size:11px; font-weight:bold;">Obj: 10 Cargos</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 20px; align-items: center; justify-content: center; margin-top: 5px;">
+                    <button onclick="showScreen('main-menu')" style="padding: 10px 25px; font-size: 16px; border-radius: 20px; background: rgba(0,0,0,0.5); border: 2px solid #fff; color: #fff; cursor: pointer;">BACK</button>
+                    <button onclick="confirmCarSelection()" style="padding: 12px 30px; font-size: 20px; font-weight: bold; background: #00ffcc; color: black; border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 0 15px #00ffcc;">START GAME</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading-screen" class="screen with-bg" style="display: none;">
+            <div class="screen-content">
+                <h2>LOADING...</h2>
+                <div id="loading-bar-bg"><div id="loading-bar"></div></div>
+                <p id="loading-text" style="margin-top: 15px; font-weight: bold; font-size: 18px; color: #00ffcc;">0%</p>
+            </div>
+        </div>
+
+        <div id="message-screen" class="screen with-bg" style="display: none;">
+            <div class="screen-content">
+                <h1 id="msg-title"></h1>
+                <p id="msg-sub"></p>
+                <button onclick="location.reload()" style="padding: 12px 30px; font-size: 20px; font-weight: bold; background: #00ffcc; color: black; border: none; border-radius: 30px; cursor: pointer; margin-top: 20px;">MAIN MENU</button>
+            </div>
+        </div>
     </div>
 
-    <!-- WANTED remis en place pour le jeu -->
-    <div id="wanted" class="hud-item" style="position: absolute; top: 10px; right: 10px; color: yellow; background: rgba(0,0,0,0.8);">WANTED: ★</div>
-
-    <canvas id="gameCanvas"></canvas>
-
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        // Configuration
-        const CAR_WIDTH = 25; const CAR_HEIGHT = 50;
-        const CIVILIAN_COUNT = 15; const PEDESTRIAN_COUNT = 20;
-
-        // Inputs
-        const keys = { up: false, down: false, left: false, right: false, nitro: false };
-        window.addEventListener('keydown', (e) => {
-            if(['ArrowUp','z','w'].includes(e.key)) keys.up = true; if(['ArrowDown','s'].includes(e.key)) keys.down = true; if(['ArrowLeft','q','a'].includes(e.key)) keys.left = true; if(['ArrowRight','d'].includes(e.key)) keys.right = true; if(e.key === ' ') { keys.nitro = true; e.preventDefault(); }
-        });
-        window.addEventListener('keyup', (e) => {
-            if(['ArrowUp','z','w'].includes(e.key)) keys.up = false; if(['ArrowDown','s'].includes(e.key)) keys.down = false; if(['ArrowLeft','q','a'].includes(e.key)) keys.left = false; if(['ArrowRight','d'].includes(e.key)) keys.right = false; if(e.key === ' ') keys.nitro = false;
-        });
-
-        class Particle { constructor(x, y, color) { this.x = x; this.y = y; this.color = color; this.vx = (Math.random()-0.5)*5; this.vy = (Math.random()-0.5)*5; this.life = 20 + Math.random()*20; this.size = 1 + Math.random()*2; } update() { this.x += this.vx; this.y += this.vy; this.life--; this.size *= 0.96; } draw() { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x - camera.x, this.y - camera.y, this.size, 0, Math.PI*2); ctx.fill(); } }
-        class Bullet { constructor(x, y, angle, owner) { this.x = x; this.y = y; this.angle = angle; this.speed = 15; this.vx = Math.cos(angle)*this.speed; this.vy = Math.sin(angle)*this.speed; this.life = 100; this.owner = owner; this.w = 5; this.h = 15; } update() { this.x += this.vx; this.y += this.vy; this.life--; } draw() { ctx.save(); ctx.translate(this.x - camera.x, this.y - camera.y); ctx.rotate(this.angle + Math.PI/2); ctx.fillStyle = '#cc0000'; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h); ctx.fillStyle = '#ffff00'; ctx.fillRect(-this.w/2, -this.h/2 - 2, this.w, 4); ctx.restore(); } getBounds() { return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h }; } }
-        class Entity { constructor(x, y, w, h, angle, speed, color) { this.x = x; this.y = y; this.w = w; this.h = h; this.angle = angle; this.speed = speed; this.color = color; this.vx = 0; this.vy = 0; this.dead = false; } getBounds() { return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h }; } update() { this.x += this.vx; this.y += this.vy; } draw() { ctx.save(); ctx.translate(this.x - camera.x, this.y - camera.y); ctx.rotate(this.angle + Math.PI/2); ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h); ctx.restore(); } }
-        class MovingEntity extends Entity { constructor(x, y, w, h, angle, speed, color, baseMaxSpeed) { super(x, y, w, h, angle, speed, color); this.baseMaxSpeed = baseMaxSpeed; this.friction = 0.98; this.turnSpeed = 0.05; this.nitro = 0; this.nitroUnlocked = false; } updatePlayer(keys, currentTile) { if (this.nitroUnlocked && keys.nitro && this.nitro > 0) { this.speed *= 1.25; this.nitro -= 0.5; if(this.fuel > 0) for(let i=0; i<3; i++) particles.push(new Particle(this.x, this.y, '#00e5ff')); } else { keys.nitro = false; } if(keys.up) { if(this.fuel > 0) { this.speed += 0.3; for(let i=0; i<2; i++) particles.push(new Particle(this.x - Math.cos(this.angle)*25, this.y - Math.sin(this.angle)*25, '#333')); } } if(keys.down) { if(this.speed > 0) this.speed -= 0.5; else this.speed -= 0.15; } if(Math.abs(this.speed) > 0.1) { let ts = this.turnSpeed * (Math.abs(this.speed) / this.baseMaxSpeed + 0.1); if(keys.left) this.angle -= ts * Math.sign(this.speed); if(keys.right) this.angle += ts * Math.sign(this.speed); } if (this.nitroUnlocked && !keys.nitro && this.nitro < 100) this.nitro += 0.1; let maxS = this.nitroUnlocked && keys.nitro ? this.baseMaxSpeed * 1.5 : this.baseMaxSpeed; let currentFriction = this.friction; if (currentTile === 2) { this.dead = true; for(let i=0; i<20; i++) particles.push(new Particle(this.x, this.y, '#1a8cff')); } if (currentTile === 4) maxS *= 0.6; this.vx = Math.cos(this.angle) * this.speed; this.vy = Math.sin(this.angle) * this.speed; this.speed *= currentFriction; if(this.speed > maxS) this.speed = maxS; super.update(); } }
-        class Player extends MovingEntity { constructor(x, y, carType = 'gti') { super(x, y, CAR_WIDTH, CAR_HEIGHT, 0, 0, '#ffffff', 11); this.fuel = 100; this.fuelDrainRate = 0.02; this.health = 5; this.maxHealth = 5; this.keysCollected = 0; this.targetCargo = 5; this.arrestTimer = 0; this.shootCooldown = 0; this.hitTimestamps = []; this.carType = carType; if (carType === 'fer') { this.baseMaxSpeed = 16; this.maxHealth = 3; this.health = 3; this.color = '#ffcc00'; } else if (carType === 'cab') { this.baseMaxSpeed = 9; this.maxHealth = 7; this.health = 7; this.color = '#cc66ff'; this.targetCargo = 5; } else if (carType === 'moto') { this.baseMaxSpeed = 15; this.maxHealth = 4; this.health = 4; this.color = '#00ffcc'; } else if (carType === 'tank_p') { this.baseMaxSpeed = 7; this.maxHealth = 20; this.health = 20; this.color = '#55ff55'; this.targetCargo = 10; this.w *= 1.3; this.h *= 1.3; this.shootCooldown = 0; } } draw() { ctx.save(); ctx.translate(this.x - camera.x, this.y - camera.y); ctx.rotate(this.angle + Math.PI/2); ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h); ctx.fillStyle = '#000'; ctx.fillRect(-2, -this.h/2 - 5, 4, 15); ctx.restore(); if(this.nitroUnlocked && keys.nitro && this.fuel > 0) { ctx.save(); ctx.translate(this.x - camera.x, this.y - camera.y); ctx.rotate(this.angle + Math.PI/2); ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.rect(-this.w/2 - 3, -this.h/2 - 3, this.w + 6, this.h + 6); ctx.stroke(); ctx.restore(); } if(invulnerabilityTimer > 0 && invulnerabilityTimer % 10 < 5) { ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; ctx.fillRect(this.x - this.w/2 - camera.x, this.y - this.h/2 - camera.y, this.w, this.h); } } }
-        class Civilian extends MovingEntity { constructor(x, y) { super(x, y, CAR_WIDTH, CAR_HEIGHT, Math.random()*Math.PI*2, 3, '#1e88e5', 4); this.maxSpeed = 3; this.targetPoint = null; this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed; } updateAI(map) { let tType = map.getTileTypeAt(this.x, this.y); if([0,2,3,4,5,6,7].includes(tType)) { let dirX = map.width/2 - this.x; let dirY = map.height/2 - this.y; this.angle = Math.atan2(dirY, dirX) + (Math.random()-0.5)*0.5; this.dead = true; for(let i=0; i<10; i++) particles.push(new Particle(this.x, this.y, '#555')); } if(Math.random() < 0.05) { if(tType === 1) this.angle += (Math.random()-0.5) * 0.1; } this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed; super.update(); } }
-        class Pedestrian { constructor(x, y) { this.x = x; this.y = y; this.vx = (Math.random()-0.5)*1.5; this.vy = (Math.random()-0.5)*1.5; this.color = '#ff8a80'; this.alive = true; } update(map) { this.x += this.vx; this.y += this.vy; let tType = map.getTileTypeAt(this.x, this.y); if([1,2,3].includes(tType)) { this.vx *= -1; this.vy *= -1; this.x += this.vx * 2; this.y += this.vy * 2; } if(Math.random()<0.02){this.vx=(Math.random()-0.5)*1.5;this.vy=(Math.random()-0.5)*1.5;} } draw(ctx, camX, camY) { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 4, 0, Math.PI*2); ctx.fill(); } }
-        class Police extends MovingEntity { constructor(x, y, type = 1, wantedLevel) { super(x, y, CAR_WIDTH, CAR_HEIGHT, 0, 0, '#ffffff', 13); this.target = null; this.type = type; this.baseMaxSpeed = 13; if(type === 2) { this.color = '#333333'; this.w *= 1.2; this.h *= 1.2; this.baseMaxSpeed = 10; } else if (type === 3) { this.color = '#1e4620'; this.w *= 1.4; this.h *= 1.4; this.baseMaxSpeed = 7; this.shootCooldown = 120; } this.pursuitTimer = 180; this.friction = 0.97; } updateAI(target, map) { if (this.dead) return; this.pursuitTimer--; if(Math.random() < 0.05) this.color = (this.type === 1) ? (this.color==='#ffffff'?'#1a8cff':'#ffffff') : this.color; let tileX = Math.floor(this.x / map.tileSize); let tileY = Math.floor(this.y / map.tileSize); if (map.getTileTypeAt(this.x, this.y) === 2) { this.dead = true; for(let i=0; i<15; i++) particles.push(new Particle(this.x, this.y, '#1a8cff')); return; } if (wantedLevel < 1) { this.color = (this.type === 1) ? '#ffffff' : this.color; this.speed *= 0.98; super.update(); return; } let angleToTarget = Math.atan2(target.y - this.y, target.x - this.x); let dist = Math.hypot(target.x - this.x, target.y - this.y); if (this.pursuitTimer > 0) { let nextX = this.x + Math.cos(angleToTarget) * 100; let nextY = this.y + Math.sin(angleToTarget) * 100; let nextTile = map.getTileTypeAt(nextX, nextY); if([0,2,3,5,6].includes(nextTile)) { angleToTarget += (Math.random()-0.5) * Math.PI/2; } if (nextTile === 2) { nextX = this.x - Math.cos(angleToTarget) * 200; nextY = this.y - Math.sin(angleToTarget) * 200; angleToTarget = Math.atan2(nextY - this.y, nextX - this.x); } this.speed += 0.5; if(this.speed > this.baseMaxSpeed) this.speed = this.baseMaxSpeed; this.angle = angleToTarget; } if (this.type === 3) { this.shootCooldown--; if (this.shootCooldown <= 0 && dist < 400 && this.pursuitTimer > 0) { for(let i=0; i<5; i++) particles.push(new Particle(this.x + Math.cos(this.angle)*40, this.y + Math.sin(this.angle)*40, '#ff3300')); bullets.push(new Bullet(this.x + Math.cos(this.angle)*40, this.y + Math.sin(this.angle)*40, this.angle, 'police')); this.shootCooldown = 240; } } super.update(); } }
-        class Helicopter { constructor(x, y) { this.x = x; this.y = y; this.size = 20; this.speed = 10; this.angle = 0; } updateAI(target) { let angleToTarget = Math.atan2(target.y - this.y, target.x - this.x); this.angle = angleToTarget; this.x += Math.cos(this.angle) * this.speed; this.y += Math.sin(this.angle) * this.speed; } draw(ctx, camX, camY) { ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, this.size, 0, Math.PI*2); ctx.fill(); ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(Date.now()*0.02); ctx.fillStyle = '#333'; ctx.fillRect(-2, -this.size-10, 4, (this.size+10)*2); ctx.fillRect(-this.size-10, -2, (this.size+10)*2, 4); ctx.restore(); ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 150, 0, Math.PI*2); ctx.fill(); } }
-        class CityMap { constructor() { this.tileSize = 250; this.cols = 40; this.rows = 40; this.width = this.cols * this.tileSize; this.height = this.rows * this.tileSize; this.grid = []; this.keys = []; this.fuels = []; this.bankSpawn = {x: 20, y: 20}; this.generateMap(); this.placeInteractables(); } generateMap() { let bankPlaced = false; for (let y = 0; y < this.rows; y++) { let row = []; for (let x = 0; x < this.cols; x++) { let type = 0; let riverCenter = 20 + Math.floor(Math.sin(y * 0.4) * 4); if (x >= riverCenter - 2 && x <= riverCenter + 2) type = 2; if (x % 3 === 0 || y % 3 === 0) type = (type === 2) ? 3 : 1; if (type === 0) { let r = Math.random(); if (!bankPlaced && x > 15 && x < 25 && y > 15 && y < 25) { type = 5; bankPlaced = true; this.bankSpawn = {x: x, y: y}; } else if (r < 0.03) type = 5; else if (r < 0.08) type = 6; else if (r < 0.13) type = 7; else if (r < 0.18) type = 8; else if (r < 0.30) type = 4; } row.push(type); } this.grid.push(row); } } placeInteractables() { for(let i=0; i<8; i++) { let kx, ky; do { kx = Math.floor(Math.random() * this.cols); ky = Math.floor(Math.random() * this.rows); } while (this.grid[ky][kx] !== 1 && this.grid[ky][kx] !== 4); this.keys.push({ x: kx * this.tileSize + this.tileSize/2, y: ky * this.tileSize + this.tileSize/2, w: 30, h: 30, collected: false }); } for(let i=0; i<40; i++) { let fx, fy; do { fx = Math.floor(Math.random() * this.cols); fy = Math.floor(Math.random() * this.rows); } while (this.grid[fy][fx] !== 1); this.fuels.push({ x: fx * this.tileSize + this.tileSize/2, y: fy * this.tileSize + this.tileSize/2, w: 24, h: 24, collected: false, amount: 40 }); } } draw(ctx, camX, camY) { ctx.fillStyle = '#111'; ctx.fillRect(0, 0, canvas.width, canvas.height); let startCol = Math.max(0, Math.floor(camX / this.tileSize)); let endCol = Math.min(this.cols, Math.ceil((camX + canvas.width) / this.tileSize)); let startRow = Math.max(0, Math.floor(camY / this.tileSize)); let endRow = Math.min(this.rows, Math.ceil((camY + canvas.height) / this.tileSize)); for (let y = startRow; y < endRow; y++) { for (let x = startCol; x < endCol; x++) { let px = x * this.tileSize - camX; let py = y * this.tileSize - camY; let type = this.grid[y][x]; if ([0, 5, 6, 7, 8].includes(type)) { ctx.fillStyle = '#8a8a8a'; ctx.fillRect(px, py, this.tileSize, this.tileSize); ctx.fillStyle = '#4a4a52'; ctx.fillRect(px + 25, py + 25, this.tileSize - 50, this.tileSize - 50); } if (type === 5) { ctx.fillStyle = '#f2e8c9'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40); ctx.fillStyle = '#c7b280'; ctx.fillRect(px + 60, py + 100, this.tileSize - 120, this.tileSize - 120); } else if (type === 6) { ctx.fillStyle = '#f0f0f0'; ctx.fillRect(px + 25, py + 25, this.tileSize - 50, this.tileSize - 50); ctx.fillStyle = '#ff3333'; ctx.fillRect(px + 70, py + 50, 110, 110); } else if (type === 7) { ctx.fillStyle = '#222'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40); ctx.fillStyle = '#444'; ctx.fillRect(px + 50, py + 50, this.tileSize - 100, this.tileSize - 100); } else if (type === 8) { ctx.fillStyle = '#1a1aff'; ctx.fillRect(px + 20, py + 20, this.tileSize - 40, this.tileSize - 40); ctx.fillStyle = '#f0f0f0'; ctx.fillRect(px + 60, py + 100, this.tileSize - 120, this.tileSize - 120); } else if (type === 1) { ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize); ctx.fillStyle = '#555'; if(x%3===0) ctx.fillRect(px+this.tileSize/2 - 10, py, 20, this.tileSize); if(y%3===0) ctx.fillRect(px, py+this.tileSize/2 - 10, this.tileSize, 20); } else if (type === 2) { ctx.fillStyle = '#1a8cff'; ctx.fillRect(px, py, this.tileSize, this.tileSize); } else if (type === 3) { ctx.fillStyle = '#444'; ctx.fillRect(px, py, this.tileSize, this.tileSize); ctx.fillStyle = '#111'; if(x%3===0) ctx.fillRect(px+10, py+50, this.tileSize-20, 150); if(y%3===0) ctx.fillRect(px+50, py+10, 150, this.tileSize-20); } else if (type === 4) { ctx.fillStyle = '#4d8a2a'; ctx.fillRect(px, py, this.tileSize, this.tileSize); } } } for(let k of this.keys) { if(!k.collected && k.x > camX && k.x < camX+canvas.width && k.y > camY && k.y < camY+canvas.height) { ctx.fillStyle = '#ffd700'; ctx.fillRect(k.x - camX - k.w/2, k.y - camY - k.h/2, k.w, k.h); ctx.fillStyle = '#000'; ctx.font = '16px Courier'; ctx.fillText('K', k.x - camX - 5, k.y - camY + 5); } } for(let f of this.fuels) { if(!f.collected && f.x > camX && f.x < camX+canvas.width && f.y > camY && f.y < camY+canvas.height) { ctx.fillStyle = '#ff5500'; ctx.fillRect(f.x - camX - f.w/2, f.y - camY - f.h/2, f.w, f.h); ctx.fillStyle = 'white'; ctx.font = '12px Courier'; ctx.fillText('F', f.x - camX - 4, f.y - camY + 4); } } } getTileTypeAt(x, y) { let gridX = Math.floor(x / this.tileSize); let gridY = Math.floor(y / this.tileSize); if (gridX < 0 || gridX >= this.cols || gridY < 0 || gridY >= this.rows) return 0; return this.grid[gridY][gridX]; } }
-
-        let map, player, civilians, police, helicopters, pedestrians, particles, bullets;
-        let gameState = 'menu', camera, invulnerabilityTimer;
-        let escCooldown = 0, wantedLevel = 0;
-        let creditsY = canvas.height;
-
-        const creditsText = [ "Realisateur: Romain Contant", "Developpeur: Romain Contant", "Compositeur: Romain Contant and Tupac", "Graphisme: Romain Contant", "Musicien: Romain Contant and Hanz zimmer", "Producteur : Romain Contant", "Psychologue : Romain Contant", "Armurerier : Romain Contant", "Activiste : Romain Contant", "Financement : Jean Luc Melenchon", "Beta testeur: Nathan et Antoine", "Merci a : Kelim, Antoine, Amelie, Nathan, Lucas, Emre le boss, Tom, Asgad", "Et surtout merci a", "Romain Contant" ];
-
-        function startGame(carType) {
-            map = new CityMap(); let px = map.bankSpawn.x * map.tileSize + map.tileSize / 2; let py = map.bankSpawn.y * map.tileSize + map.tileSize / 2; player = new Player(px, py, carType); wantedLevel = 0; civilians = []; police = []; helicopters = []; pedestrians = []; particles = []; bullets = []; for(let i=0; i<PEDESTRIAN_COUNT; i++) { let px, py; do { px = Math.random()*map.width; py = Math.random()*map.height; } while ([1,2,3].includes(map.getTileTypeAt(px, py))); pedestrians.push(new Pedestrian(px, py)); } for(let i=0; i<CIVILIAN_COUNT; i++) { let px, py; do { px = Math.random()*map.width; py = Math.random()*map.height; } while (map.getTileTypeAt(px, py) !== 1); civilians.push(new Civilian(px, py)); } camera = { x: player.x - canvas.width / 2, y: player.y - canvas.height / 2 }; invulnerabilityTimer = 0; gameState = 'playing';
-            // Remet WANTED si on lance une partie
-            document.getElementById('wanted').style.display = 'block';
-        }
-        
-        function drawMenu() { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = '#ffff00'; ctx.font = 'bold 80px Courier'; ctx.textAlign = 'center'; ctx.fillText("GO-FAST", canvas.width / 2, canvas.height / 3); ctx.fillStyle = '#fff'; ctx.font = '24px Courier'; ctx.fillText("Z/Up: Accelerate, S/Down: Brake, Q/D/Left/Right: Turn", canvas.width / 2, canvas.height * 0.45); ctx.fillText("Space: Nitro (unlocked at WANTED 1)", canvas.width / 2, canvas.height * 0.5); if (player && player.dead) { ctx.fillStyle = '#ff3333'; ctx.font = 'bold 36px Courier'; ctx.fillText(player.health > 0 ? "GAME OVER: ARRETE" : "GAME OVER: CRASHÉ", canvas.width / 2, canvas.height * 0.6); } if (gameState === 'win') { ctx.fillStyle = '#33ff33'; ctx.font = 'bold 36px Courier'; ctx.fillText("GO-FAST REUSSI ! CARGAISON LIVREE", canvas.width / 2, canvas.height * 0.6); } ctx.fillStyle = '#444'; ctx.fillRect(0, canvas.height * 0.7, canvas.width, canvas.height * 0.3); ctx.fillStyle = '#ccc'; ctx.font = 'bold 20px Courier'; ctx.textAlign = 'left'; ctx.fillText("SELECT YOUR RIDE", 50, canvas.height * 0.75); let vehicles = [['gti', 'Balanced GTI', 110], ['fer', 'Speed Ferrari', 360], ['cab', 'Armored Cabrio', 610], ['moto', 'Agile Yamaha', 860], ['tank_p', 'Heavy Tank', 1110]]; vehicles.forEach(v => { ctx.fillStyle = player && player.carType === v[0] ? '#ffff00' : '#888'; ctx.font = 'bold 24px Courier'; ctx.fillText(`${v[0].toUpperCase()}: ${v[1]}`, v[2], canvas.height * 0.85); ctx.font = '16px Courier'; if(v[0]==='tank_p') ctx.fillText(`Obj: 10, Shoot: P, Poussée: Fat, V: 7`, v[2], canvas.height * 0.9); else if(v[0]==='fer') ctx.fillText(`MaxH: 3, V: 16`, v[2], canvas.height * 0.9); else if(v[0]==='cab') ctx.fillText(`MaxH: 7, V: 9`, v[2], canvas.height * 0.9); else if(v[0]==='moto') ctx.fillText(`MaxH: 4, V: 15, Agilité`, v[2], canvas.height * 0.9); else if(v[0]==='gti') ctx.fillText(`MaxH: 5, V: 11, Standard`, v[2], canvas.height * 0.9); }); if (wantedLevel === 5) { ctx.fillStyle = '#ffff00'; ctx.font = '24px Courier'; ctx.fillText("CREDITS: [C]", 1360, canvas.height * 0.75); } ctx.fillStyle = '#fff'; ctx.font = '28px Courier'; ctx.textAlign = 'center'; ctx.fillText(`[Z/S] pour choisir, [ESPACE] pour lancer${wantedLevel === 5 ? ', [C] pour credits' : ''}`, canvas.width / 2, canvas.height * 0.98); }
-        function showCredits() { gameState = 'credits'; creditsY = canvas.height; document.getElementById('wanted').style.display = 'none'; }
-        
-        window.addEventListener('keydown', (e) => {
-            if (gameState === 'menu') {
-                if(['ArrowUp','z'].includes(e.key)) currentSelectedVehIdx = (currentSelectedVehIdx > 0) ? currentSelectedVehIdx - 1 : currentSelectedVehIdx;
-                if(['ArrowDown','s'].includes(e.key)) currentSelectedVehIdx = (currentSelectedVehIdx < 4) ? currentSelectedVehIdx + 1 : currentSelectedVehIdx;
-                vehicles.forEach((v, idx) => { if(currentSelectedVehIdx === idx) player = { carType: v[0] }; });
-                if(e.key === ' ') startGame(player.carType);
-                if(e.key.toLowerCase() === 'c' && wantedLevel === 5) showCredits();
-            }
-        });
-        
-        let vehicles = [['gti', 'Balanced GTI', 110], ['fer', 'Speed Ferrari', 360], ['cab', 'Armored Cabrio', 610], ['moto', 'Agile Yamaha', 860], ['tank_p', 'Heavy Tank', 1110]];
-        let currentSelectedVehIdx = 0; player = {carType: 'gti'};
-
-        function triggerWin() { gameState = 'win'; document.getElementById('wanted').style.display = 'none'; }
-        function triggerGameOver(reason) { player.dead = true; gameState = 'menu'; document.getElementById('wanted').style.display = 'none'; }
-        function rectIntersect(r1, r2) { return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y); }
-        function applyDamage(amount) { if (invulnerabilityTimer > 0) return; player.health -= amount; invulnerabilityTimer = 42; player.speed *= 0.5; for(let i=0; i<10; i++) particles.push(new Particle(player.x, player.y, '#ff3300')); if(player.health <= 0) triggerGameOver('crash'); }
-        function spawnEntities() { if(civilians.length < CIVILIAN_COUNT) { let cx, cy; do { cx = Math.random()*map.width; cy = Math.random()*map.height; } while (map.getTileTypeAt(cx, cy) !== 1); civilians.push(new Civilian(cx, cy)); } }
-
-        function update() {
-            try {
-                if(escCooldown > 0) escCooldown--; if(typeof keys !== 'undefined' && keys.esc && escCooldown <= 0) { escCooldown = 20; if(gameState === 'playing') { gameState = 'pause'; return; } else if (gameState === 'pause') { gameState = 'playing'; return; } else if (gameState === 'credits') { gameState = 'menu'; return; } }
-                if(gameState !== 'playing') return;
-                if(typeof keys === 'undefined') return;
-
-                if(invulnerabilityTimer > 0) invulnerabilityTimer--;
-                if(player.hitTimestamps === undefined) player.hitTimestamps = [];
-
-                if (keys.up || keys.down || keys.left || keys.right) player.fuel -= player.fuelDrainRate;
-                if(player.fuel <= 0) { player.fuel = 0; player.baseMaxSpeed = 0; triggerGameOver('fuel'); }
-
-                let currentTile = map.getTileTypeAt(player.x, player.y);
-                if (keys.nitro && player.nitroUnlocked) {
-                    player.updatePlayer(keys, currentTile);
-                    if (keys.left || keys.right) player.speed *= 0.95; // Malus de virage sous nitro
-                } else {
-                    player.updatePlayer(keys, currentTile);
-                }
-
-                if (keys.shoot && player.carType === 'tank_p' && player.shootCooldown <= 0) {
-                    bullets.push(new Bullet(player.x, player.y, player.angle, 'player'));
-                    player.shootCooldown = 40; for(let i=0; i<5; i++) particles.push(new Particle(player.x + Math.cos(player.angle)*50, player.y + Math.sin(player.angle)*50, '#ffcc00'));
-                }
-                
-                spawnEntities();
-
-                for(let pt of particles) pt.update();
-                for(let ped of pedestrians) ped.update(map);
-                for(let b of bullets) b.update();
-                particles = particles.filter(p => p.life > 0);
-                bullets = bullets.filter(b => b.life > 0);
-                
-                pedestrians = pedestrians.filter(p => p.alive && Math.abs(p.x - player.x) < 1200);
-
-                let pBounds = player.getBounds();
-
-                for(let f of map.fuels) { if(!f.collected && Math.hypot(player.x - f.x, player.y - f.y) < 50) { f.collected = true; player.fuel = Math.min(100, player.fuel + f.amount); } }
-                for(let k of map.keys) { if(!k.collected && Math.hypot(player.x - k.x, player.y - k.y) < 50) { k.collected = true; player.keysCollected++; wantedLevel = player.keysCollected; if(wantedLevel > 5) wantedLevel = 5; let unlockNitroAtKey = 1; if (wantedLevel >= unlockNitroAtKey) player.nitroUnlocked = true; let t = wantedLevel; for(let i=0; i<t; i++) { if(police.length < wantedLevel * 2) { let px, py; do { px = player.x + (Math.random()-0.5)*1500; py = player.y + (Math.random()-0.5)*1500; } while ([1].includes(map.getTileTypeAt(px, py)) === false); police.push(new Police(px, py, 1)); } } } }
-
-                civilians.forEach((c, idx) => {
-                    c.updateAI(map); if(rectIntersect(pBounds, c.getBounds())) { wantedLevel = Math.max(wantedLevel, 1); if(invulnerabilityTimer<=0) { if(player.carType === 'tank_p') { c.dead = true; for(let i=0; i<20; i++) particles.push(new Particle(c.x, c.y, '#555')); } else { applyDamage(1); player.hitTimestamps.push(Date.now()); } } let dx = player.x - c.x; let dy = player.y - c.y; let dist = Math.hypot(dx, dy); if (dist > 0) { player.vx += (dx / dist) * 2; player.vy += (dy / dist) * 2; c.vx -= (dx / dist) * 2; c.vy -= (dy / dist) * 2; } player.vx *= 0.5; player.vy *= 0.5; if(player.carType !== 'tank_p') c.speed *= -1; }
-                    police.forEach(p => { if(rectIntersect(c.getBounds(), p.getBounds())) { let dx = c.x - p.x; let dy = c.y - p.y; let dist = Math.hypot(dx, dy); if (dist > 0) { c.vx += (dx / dist) * 1.5; c.vy += (dy / dist) * 1.5; } } });
-                });
-
-                if (Math.abs(player.speed) < 2.0) player.arrestTimer++; else player.arrestTimer = 0;
-                let policeInContact = false;
-
-                // Ajout de la trainée missile pour les projectiles du Tank
-                bullets.forEach(b => {
-                    if (b.owner === 'player' && player.carType === 'tank_p') {
-                        particles.push(new Particle(b.x, b.y, '#cc0000'));
-                    }
-                });
-
-                helicopters.forEach(h => {
-                    h.updateAI(player);
-                    ctx.save(); ctx.translate(h.x-camera.x, h.y-camera.y); ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; ctx.beginPath(); ctx.arc(0, 0, 150, 0, Math.PI*2); ctx.fill(); ctx.restore();
-                    let distH = Math.hypot(player.x - h.x, player.y - h.y); if(distH < 200 && wantedLevel < 3) player.speed *= 0.99;
-                });
-
-                police.forEach(p => {
-                    p.updateAI(player, map); if(rectIntersect(pBounds, p.getBounds())) { if(invulnerabilityTimer <= 0) { if(p.type === 2) applyDamage(2); else if(p.type === 1) applyDamage(1); policeInContact = true; } let dx = player.x - p.x; let dy = player.y - p.y; let dist = Math.hypot(dx, dy); if (dist > 0) { player.vx += (dx / dist) * 3; player.vy += (dy / dist) * 3; p.vx -= (dx / dist) * 3; p.vy -= (dy / dist) * 3; } player.vx *= 0.4; player.vy *= 0.4; }
-                    police.forEach(otherP => { if(p !== otherP && rectIntersect(p.getBounds(), otherP.getBounds())) { let dx = p.x - otherP.x; let dy = p.y - otherP.y; let dist = Math.hypot(dx, dy); if (dist > 0) { p.vx += (dx / dist) * 1; p.vy += (dy / dist) * 1; } } });
-                });
-
-                if (policeInContact && Math.abs(player.speed) < 2.0 && invulnerabilityTimer <= 0) { if(player.carType !== 'tank_p') { player.arrestTimer += 2; if (player.arrestTimer > 100) triggerGameOver('arrest'); } }
-
-                bullets = bullets.filter(b => {
-                    if (b.owner === 'player' && rectIntersect(b.getBounds(), pBounds) === false) {
-                        police.forEach(p => { if(rectIntersect(b.getBounds(), p.getBounds())) { p.dead = true; for(let i=0; i<15; i++) particles.push(new Particle(p.x, p.y, '#555')); return false; } });
-                        helicopters.forEach(h => { if (rectIntersect(b.getBounds(), {x: h.x-h.size/2, y: h.y-h.size/2, w: h.size, h: h.size})) { b.life = 0; h.speed *= 0.5; wantedLevel = Math.max(wantedLevel, 4); return false; } });
-                    }
-                    if (b.owner === 'police' && rectIntersect(b.getBounds(), pBounds)) {
-                        applyDamage(1); return false;
-                    }
-                    return true;
-                });
-
-                if(civilians.filter(c => c.vx > 0.5 || c.vy > 0.5).length >= 3 && Math.random() < 0.01 && wantedLevel < 3 && wantedLevel > 0) wantedLevel++;
-                police = police.filter(p => !p.dead);
-
-                invulnerabilityTimer = Math.max(0, invulnerabilityTimer - 1);
-
-                camera.x = player.x - canvas.width / 2;
-                camera.y = player.y - canvas.height / 2;
-
-                document.getElementById('health').innerText = `Hull: ${player.health}/${player.maxHealth}`;
-                document.getElementById('fuel').innerText = `Fuel: ${Math.ceil(player.fuel)}%`;
-                document.getElementById('nitro').innerText = `NITRO: ${player.nitroUnlocked ? 'READY' : 'LOCKED'}`;
-                document.getElementById('cargo').innerText = `Cargo: ${player.keysCollected}/${player.targetCargo}`;
-                document.getElementById('wanted').innerText = `WANTED: ${'★'.repeat(wantedLevel)}`;
-
-                if(player.keysCollected >= player.targetCargo) { gameState = 'menu'; triggerWin(); }
-                wantedLevel = Math.max(0, wantedLevel);
-
-            } catch (e) { console.error("Erreur Update: ", e); }
-        }
-
-        function draw() { ctx.clearRect(0, 0, canvas.width, canvas.height); map.draw(ctx, camera.x, camera.y); bullets.forEach(b => b.draw()); particles.forEach(p => p.draw()); pedestrians.forEach(p => p.draw(ctx, camera.x, camera.y)); civilians.forEach(c => c.draw()); police.forEach(p => p.draw()); if (gameState === 'pause') { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = '#fff'; ctx.font = 'bold 48px Courier'; ctx.textAlign = 'center'; ctx.fillText("PAUSE", canvas.width / 2, canvas.height / 2); } else if (gameState === 'win') { drawWin(); } else if (player && !player.dead) { player.draw(); helicopters.forEach(h => h.draw(ctx, camera.x, camera.y)); } if(gameState === 'playing' && player && player.health > 0) { player.draw(); helicopters.forEach(h => h.draw(ctx, camera.x, camera.y)); } if(player.arrestTimer > 0) { ctx.fillStyle = `rgba(255, 0, 0, ${player.arrestTimer/100})`; ctx.fillRect(0,0,canvas.width,canvas.height); } }
-        function drawCredits() { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = '#fff'; ctx.font = 'bold 36px Courier'; ctx.textAlign = 'center'; creditsText.forEach((t, i) => { ctx.fillText(t, canvas.width / 2, creditsY + i * 50); }); creditsY -= 2; if (creditsY < -creditsText.length * 50 - 100) gameState = 'menu'; ctx.fillStyle = '#111'; ctx.fillRect(0, canvas.height - 100, canvas.width, 100); ctx.fillStyle = '#aaa'; ctx.font = '24px Courier'; ctx.textAlign = 'center'; ctx.fillText("Pressez C ou Echap pour menu", canvas.width / 2, canvas.height - 50); }
-        function drawWin() { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = '#00ff00'; ctx.font = 'bold 60px Courier'; ctx.textAlign = 'center'; ctx.fillText("GO-FAST RÉUSSI !", canvas.width / 2, canvas.height / 3); ctx.fillStyle = '#fff'; ctx.font = '28px Courier'; ctx.fillText("La cargaison est bien livrée. L'argent est à nous.", canvas.width / 2, canvas.height * 0.45); ctx.fillText("Les flics ont bien ragés. Pressez Echap pour menu.", canvas.width / 2, canvas.height * 0.52); }
-
-        function gameLoop() { update(); if (gameState === 'menu' || gameState === 'win') drawMenu(); else if (gameState === 'playing' || gameState === 'pause') draw(); else if (gameState === 'credits') drawCredits(); requestAnimationFrame(gameLoop); }
-
-        document.getElementById('wanted').style.display = 'none';
-        
-        startGame('gti'); // Lancement par défaut pour les tests
-        gameLoop();
-        
-        setInterval(() => { if (gameState === 'playing' && wantedLevel >= 3 && helicopters.length < 1) helicopters.push(new Helicopter(player.x-1000, player.y-1000)); if (gameState === 'playing' && wantedLevel >= 1 && police.length < wantedLevel*1.5 && Math.random()<0.1) { police.push(new Police(player.x+(Math.random()>0.5?1:-1)*1200, player.y+(Math.random()>0.5?1:-1)*1200, wantedLevel >= 5 ? 3 : (wantedLevel >= 4 ? 2 : 1))); } }, 2000);
-        setInterval(() => { if (gameState === 'playing' && wantedLevel >= 4 && Math.abs(player.speed) > 5 && Math.random()<0.05) police.push(new Police(player.x+Math.cos(player.angle+Math.PI/2)*500, player.y+Math.sin(player.angle+Math.PI/2)*500, 2)); }, 1000);
-
-        setInterval(() => { if (wantedLevel >= 5 && helicopters.length > 0) { let h = helicopters[0]; bullets.push(new Bullet(h.x, h.y, Math.atan2(player.y-h.y, player.x-h.x), 'police')); for(let i=0; i<3; i++) particles.push(new Particle(h.x, h.y, '#ff3300')); } }, 4000);
-    
-        // Touche Echap pour menu et wanted désactivé
-        window.addEventListener('keydown', (e) => {
-            if(e.key === 'Escape' && gameState === 'playing') triggerGameOver('esc');
-            if(e.key === 'Escape' && ['win','credits'].includes(gameState)) gameState = 'menu';
-        });
-
-    </script>
+    <script src="js/input.js"></script>
+    <script src="js/entities.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/game.js"></script>
 </body>
 </html>
