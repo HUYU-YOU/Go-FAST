@@ -1,12 +1,14 @@
 const keys = { up: false, down: false, left: false, right: false, nitro: false, shoot: false, enter: false, esc: false };
-window.mouse = { x: 800, y: 480, active: false }; // Track position souris par rapport au centre
+window.mouse = { x: 800, y: 480, active: false };
 
 window.addEventListener('keydown', (e) => {
     let k = e.key.toLowerCase();
     if(k === 'arrowup' || k === 'z' || k === 'w') keys.up = true;
     if(k === 'arrowdown' || k === 's') keys.down = true;
-    if(k === 'arrowleft' || k === 'q' || k === 'a') keys.left = true;
-    if(k === 'arrowright' || k === 'd') keys.right = true;
+    
+    if(k === 'arrowleft' || k === 'q' || k === 'a') { keys.left = true; window.mouse.active = false; }
+    if(k === 'arrowright' || k === 'd') { keys.right = true; window.mouse.active = false; }
+    
     if(e.key === ' ') { keys.nitro = true; keys.shoot = true; e.preventDefault(); }
     if(k === 'f' || e.key === 'shift') { keys.shoot = true; keys.nitro = true; e.preventDefault(); }
     if(e.key === 'enter') { keys.enter = true; e.preventDefault(); }
@@ -25,7 +27,7 @@ window.addEventListener('keyup', (e) => {
     if(e.key === 'escape') keys.esc = false;
 });
 
-// Suivi position souris pour viser
+// Suivi de la souris calculé pour le canvas 1600x960
 window.addEventListener('mousemove', (e) => {
     const canvas = document.getElementById('gameCanvas');
     const rect = canvas.getBoundingClientRect();
@@ -33,31 +35,17 @@ window.addEventListener('mousemove', (e) => {
     const scaleY = 960 / rect.height;
     window.mouse.x = (e.clientX - rect.left) * scaleX;
     window.mouse.y = (e.clientY - rect.top) * scaleY;
-    window.mouse.active = true;
+    window.mouse.active = true; 
 });
 
-// GESTION DES CLICS SOURIS
 window.addEventListener('mousedown', (e) => {
-    if (e.button === 0) { // Clic Gauche = Gaz + Action
-        keys.up = true;
-        keys.nitro = true;
-        keys.shoot = true;
-    }
-    if (e.button === 2) { // Clic Droit = Frein/Recul
-        keys.down = true;
-    }
+    if (e.button === 0) { keys.up = true; keys.nitro = true; keys.shoot = true; } 
+    if (e.button === 2) { keys.down = true; } 
 });
 
 window.addEventListener('mouseup', (e) => {
-    if (e.button === 0) { 
-        keys.up = false;
-        keys.nitro = false;
-        keys.shoot = false;
-    }
-    if (e.button === 2) { 
-        keys.down = false; 
-    }
+    if (e.button === 0) { keys.up = false; keys.nitro = false; keys.shoot = false; }
+    if (e.button === 2) { keys.down = false; }
 });
 
-// Empêche le menu du navigateur au clic droit
 window.addEventListener('contextmenu', e => e.preventDefault());
