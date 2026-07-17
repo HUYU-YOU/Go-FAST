@@ -1,5 +1,5 @@
 const keys = { up: false, down: false, left: false, right: false, nitro: false, shoot: false, enter: false, esc: false };
-const mouse = { x: 800, y: 480, active: false };
+window.mouse = { x: 800, y: 480, active: false }; // Track position souris par rapport au centre
 
 window.addEventListener('keydown', (e) => {
     let k = e.key.toLowerCase();
@@ -25,27 +25,39 @@ window.addEventListener('keyup', (e) => {
     if(e.key === 'escape') keys.esc = false;
 });
 
-// Suivi de la souris (Ajusté à la taille réelle du Canvas interne 1600x960)
+// Suivi position souris pour viser
 window.addEventListener('mousemove', (e) => {
     const canvas = document.getElementById('gameCanvas');
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    mouse.x = (e.clientX - rect.left) * scaleX;
-    mouse.y = (e.clientY - rect.top) * scaleY;
-    mouse.active = true;
+    const scaleX = 1600 / rect.width;
+    const scaleY = 960 / rect.height;
+    window.mouse.x = (e.clientX - rect.left) * scaleX;
+    window.mouse.y = (e.clientY - rect.top) * scaleY;
+    window.mouse.active = true;
 });
 
-// Clics de souris pour Piloter
+// GESTION DES CLICS SOURIS
 window.addEventListener('mousedown', (e) => {
-    if (e.button === 0) { keys.up = true; keys.nitro = true; keys.shoot = true; } // Clic Gauche = Gaz + Action
-    if (e.button === 2) { keys.down = true; } // Clic Droit = Frein/Recul
+    if (e.button === 0) { // Clic Gauche = Gaz + Action
+        keys.up = true;
+        keys.nitro = true;
+        keys.shoot = true;
+    }
+    if (e.button === 2) { // Clic Droit = Frein/Recul
+        keys.down = true;
+    }
 });
 
 window.addEventListener('mouseup', (e) => {
-    if (e.button === 0) { keys.up = false; keys.nitro = false; keys.shoot = false; }
-    if (e.button === 2) { keys.down = false; }
+    if (e.button === 0) { 
+        keys.up = false;
+        keys.nitro = false;
+        keys.shoot = false;
+    }
+    if (e.button === 2) { 
+        keys.down = false; 
+    }
 });
 
-// Bloque le menu contextuel du clic droit
+// Empêche le menu du navigateur au clic droit
 window.addEventListener('contextmenu', e => e.preventDefault());
