@@ -63,7 +63,6 @@ function applyVolumeSettings() {
     radioStations.forEach((r, idx) => { if(gameState === 'playing' && idx === currentRadioIndex) r.audio.volume = targetVol; else r.audio.volume = 0; });
 }
 
-// MISE A JOUR CORRIGÉE DU MEILLEUR SCORE GLOBAL
 function updateMenuBestScore() {
     let best = localStorage.getItem('gofast_best_time');
     let el = document.getElementById('global-best-score');
@@ -84,9 +83,9 @@ window.selectCar = function(carType) {
     let cards = document.querySelectorAll('.car-card');
     
     cards.forEach(c => {
-        c.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)';
-        c.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-        c.style.background = 'rgba(255, 255, 255, 0.05)';
+        c.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)';
+        c.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        c.style.background = 'rgba(10, 10, 15, 0.8)';
         c.style.transform = 'translateY(0) scale(1)';
     });
     
@@ -100,7 +99,7 @@ window.selectCar = function(carType) {
         
         card.style.boxShadow = `0 0 25px ${glowColor}, inset 0 0 15px ${glowColor}`;
         card.style.borderColor = glowColor;
-        card.style.background = 'rgba(255, 255, 255, 0.15)';
+        card.style.background = 'rgba(30, 30, 40, 0.9)';
         card.style.transform = 'translateY(-8px) scale(1.05)';
     }
     
@@ -123,7 +122,7 @@ window.selectCar = function(carType) {
         if(carType === 'tank_p') scoreColor = '#55ff55';
         el.style.color = scoreColor;
         el.style.borderColor = scoreColor;
-        el.style.textShadow = `0 0 8px ${scoreColor}, 2px 2px 4px #000`;
+        el.style.textShadow = `0 0 8px ${scoreColor}, 1px 1px 2px #000`;
     }
 }
 
@@ -141,7 +140,6 @@ function showScreen(id) {
     let timerDisplay = document.getElementById('timer-display');
     if(timerDisplay) timerDisplay.style.display = 'none';
     
-    // MASQUE LE WANTED AU MENU
     let wantedDisplay = document.getElementById('wanted-display');
     if (wantedDisplay) wantedDisplay.style.display = 'none';
 
@@ -296,7 +294,7 @@ function triggerWin() {
 
     if (player.carType === 'tank_p') {
         gameState = 'credits';
-        creditsY = 960; // Commence en bas de l'écran 1600x960
+        creditsY = 960; 
         radioStations.forEach(r => r.audio.volume = 0);
         menuMusic.play().catch(e=>e);
     } else {
@@ -468,7 +466,6 @@ function update() {
             timerNode.innerText = `TIME: ${mins}:${secs}.${ms}`;
         }
 
-        // AFFICHAGE DU WANTED EN JEU
         let wantedNode = document.getElementById('wanted-display');
         if (wantedNode) {
             if (wantedLevel > 0) {
@@ -506,7 +503,7 @@ function update() {
         }
 
         if (keys.shoot && player.carType === 'tank_p' && player.shootCooldown <= 0) {
-            bullets.push(new Bullet(player.x, player.y, player.angle, 'player_tank')); // MODIF: tag 'player_tank' pour les missiles
+            bullets.push(new Bullet(player.x, player.y, player.angle, 'player_tank')); 
             player.shootCooldown = 40; 
         }
 
@@ -517,22 +514,21 @@ function update() {
         for(let ped of pedestrians) ped.update(map);
         for(let pt of particles) pt.update();
         
-        // MODIF: Gère l'update des balles ET dessine de la fumée pour les missiles
         for(let b of bullets) {
             b.update();
             if(b.owner.includes('tank')) {
-                // Petite trainée de feu derrière le missile
+                // TRAINEE DE FUMEE MISSILE
                 particles.push(new Particle(b.x, b.y, Math.random() > 0.5 ? '#ff3300' : '#ff9900'));
             }
         }
 
-        // MODIF: Nettoyage et suppression des noyés
+        // SUPPRESSION DES IA NOYEES
         civilians = civilians.filter(c => {
-            if (c.drowned) { for(let i=0; i<15; i++) particles.push(new Particle(c.x, c.y, '#1a8cff')); return false; }
+            if (c.drowned) { for(let i=0; i<30; i++) particles.push(new Particle(c.x, c.y, '#1a8cff')); return false; }
             return Math.abs(c.x - player.x) < 2200 && Math.abs(c.y - player.y) < 2200;
         });
         police = police.filter(p => {
-            if (p.drowned) { for(let i=0; i<15; i++) particles.push(new Particle(p.x, p.y, '#1a8cff')); return false; }
+            if (p.drowned) { for(let i=0; i<30; i++) particles.push(new Particle(p.x, p.y, '#1a8cff')); return false; }
             return !p.dead && Math.abs(p.x - player.x) < 2200 && Math.abs(p.y - player.y) < 2200;
         });
         
@@ -664,7 +660,6 @@ function update() {
             triggerWin();
         }
 
-        // Camera center is half of true canvas dimensions
         camera.x = player.x - 1600 / 2; camera.y = player.y - 960 / 2;
 
         let healthNode = document.getElementById('health');
@@ -692,8 +687,10 @@ function update() {
 
 function draw() {
     try {
+        // VIDAGE DU CANVAS POUR AFFICHER LES BACKGROUNDS DES MENUS PROPREMENT
+        ctx.clearRect(0, 0, 1600, 960); 
+
         if(gameState === 'playing') {
-            ctx.clearRect(0, 0, 1600, 960); 
             map.draw(ctx, camera.x, camera.y);
             for(let pt of particles) pt.draw(ctx, camera.x, camera.y);
             for(let ped of pedestrians) ped.draw(ctx, camera.x, camera.y);
