@@ -54,15 +54,26 @@ class Bullet {
     constructor(x, y, angle, owner = 'police') {
         this.x = x; this.y = y; this.angle = angle;
         this.owner = owner;
-        this.speed = 15; this.life = 100;
+        
+        // MODIF: Si c'est un tank (joueur ou police), vitesse énorme
+        this.speed = (owner.includes('tank')) ? 35 : 15; 
+        this.life = 100;
         this.vx = Math.cos(this.angle) * this.speed;
         this.vy = Math.sin(this.angle) * this.speed;
     }
     update() { this.x += this.vx; this.y += this.vy; this.life--; }
     draw(ctx, camX, camY) {
-        ctx.fillStyle = this.owner === 'player' ? '#00ffcc' : '#ffcc00'; 
-        ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 6, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 3, 0, Math.PI*2); ctx.fill();
+        if (this.owner.includes('tank')) {
+            // Effet Boule de feu pour le tank
+            ctx.fillStyle = '#ff3300'; // Traînée rouge/orange
+            ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 8, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ffcc00'; 
+            ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 4, 0, Math.PI*2); ctx.fill();
+        } else {
+            ctx.fillStyle = this.owner === 'player' ? '#00ffcc' : '#ffcc00'; 
+            ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 3, 0, Math.PI*2); ctx.fill();
+        }
     }
     getBounds() { return {x: this.x-6, y: this.y-6, w: 12, h: 12}; }
 }
@@ -109,7 +120,7 @@ class Player extends Car {
         if (this.underHeliSpotlight) currentMax *= 0.6; 
         if (this.shootCooldown > 0) this.shootCooldown--;
 
-        if(keysInput.nitro && this.nitroUnlocked && this.nitro > 0 && this.fuel > 0) {
+        if(keysInput.nitro && this.nitroUnlocked && this.nitro > 0 && this.fuel > 0 && this.carType !== 'tank_p') {
             currentMax += 15; this.nitro -= 0.5; this.speed += this.acceleration * 2.5;
         } else {
             if (keysInput.up && this.fuel > 0) this.speed += this.acceleration;
@@ -119,9 +130,17 @@ class Player extends Car {
         this.speed *= this.friction;
         if (this.speed > currentMax) this.speed = currentMax;
 
-        if (Math.abs(this.speed) > 0.5) {
+        let turnModifier = this.carType === 'moto' ? 1.4 : (this.carType === 'tank_p' ? 0.6 : 1);
+        
+        // MODIF: Rotation prioritaire vers la souris si on l'a bougée
+        if (window.mouse.active) {
+            // Calcul angle vers la souris (1600/2, 960/2 car le joueur est toujours au centre caméra)
+            let targetAngle = Math.atan2(window.mouse.y - 960/2, window.mouse.x - 1600/2);
+            let diff = targetAngle - this.angle;
+            while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
+            this.angle += Math.sign(diff) * Math.min(Math.abs(diff), this.turnSpeed * turnModifier * 1.5);
+        } else if (Math.abs(this.speed) > 0.5) {
             let dir = this.speed > 0 ? 1 : -1;
-            let turnModifier = this.carType === 'moto' ? 1.4 : (this.carType === 'tank_p' ? 0.6 : 1);
             if (keysInput.left) this.angle -= (this.turnSpeed * turnModifier) * dir;
             if (keysInput.right) this.angle += (this.turnSpeed * turnModifier) * dir;
         }
@@ -172,7 +191,7 @@ class Civilian extends Car {
         this.angle = dirs[Math.floor(Math.random() * dirs.length)];
         this.vx = Math.cos(this.angle) * this.maxSpeed; this.vy = Math.sin(this.angle) * this.maxSpeed;
         this.skinIndex = Math.floor(Math.random() * 12); 
-        this.dead = false;
+        this.dead = false; this.drowned = false; // Flag noyade
     }
     updateAI(mapObj) {
         if(this.dead) {
@@ -181,9 +200,12 @@ class Civilian extends Car {
             return;
         }
 
+        let currentTile = mapObj.getTileTypeAt(this.x, this.y);
+        if (currentTile === 2) { this.drowned = true; return; }
+
         let nextX = this.x + this.vx * 2; let nextY = this.y + this.vy * 2;
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
-        if([0, 2, 5, 6, 7, 8].includes(nextTile)) {
+        if([0, 2, 5, 6, 7, 8].includes(nextTile)) { // Ajout de 2 (eau) pour l'évitement
             this.angle += Math.PI/2;
             this.vx = Math.cos(this.angle) * this.maxSpeed;
             this.vy = Math.sin(this.angle) * this.maxSpeed;
@@ -191,6 +213,7 @@ class Civilian extends Car {
         super.update();
     }
     draw(ctx, camX, camY) {
+        if(this.drowned) return;
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         
         let img = ASSETS.civilians[this.skinIndex];
@@ -209,7 +232,7 @@ class Civilian extends Car {
 class Police extends Car {
     constructor(x, y, type, wantedLevel) {
         super(x, y, 80, 48, 'blue'); this.type = type; this.spinTimer = 0; this.shootTimer = 0;
-        this.dead = false; 
+        this.dead = false; this.drowned = false; // Flag noyade
         this.skinIndex = Math.floor(Math.random() * 2);
         
         let speedBoost = (wantedLevel >= 3) ? (wantedLevel * 0.4) : 0; 
@@ -225,17 +248,20 @@ class Police extends Car {
             return;
         }
 
+        let currentTile = mapObj.getTileTypeAt(this.x, this.y);
+        if (currentTile === 2) { this.drowned = true; return; }
+
         if(this.spinTimer > 0) { 
             this.spinTimer--; this.angle += 0.2; this.vx *= 0.92; this.vy *= 0.92; 
             this.x += this.vx; this.y += this.vy; return; 
         }
 
-        let nextX = this.x + Math.cos(this.angle) * (this.speed * 3);
-        let nextY = this.y + Math.sin(this.angle) * (this.speed * 3);
+        let nextX = this.x + Math.cos(this.angle) * (this.speed * 4); // Anticipation
+        let nextY = this.y + Math.sin(this.angle) * (this.speed * 4);
         let nextTile = mapObj.getTileTypeAt(nextX, nextY);
 
         let targetAngle;
-        if ([0, 5, 6, 7].includes(nextTile)) {
+        if ([0, 2, 5, 6, 7].includes(nextTile)) { // Contourne l'eau et murs
             targetAngle = this.angle + (Math.PI / 1.5); this.speed *= 0.8;
         } else {
             targetAngle = Math.atan2(playerObj.y - this.y, playerObj.x - this.x);
@@ -260,12 +286,13 @@ class Police extends Car {
         if (this.type === 3) {
             this.shootTimer--;
             if (this.shootTimer <= 0 && Math.hypot(playerObj.x - this.x, playerObj.y - this.y) < 800) {
-                bulletsArr.push(new Bullet(this.x, this.y, targetAngle, 'police'));
+                bulletsArr.push(new Bullet(this.x, this.y, targetAngle, 'police_tank'));
                 this.shootTimer = 90; 
             }
         }
     }
     draw(ctx, camX, camY) {
+        if(this.drowned) return;
         ctx.save(); ctx.translate(this.x - camX, this.y - camY); ctx.rotate(this.angle);
         
         let img = null;
@@ -276,7 +303,7 @@ class Police extends Car {
         if (img && img.complete && img.naturalWidth > 0) {
             // ROTATION CORRIGÉE POUR LE VAN DE POLICE
             let rot = Math.PI / 2;
-            if (this.type === 2) rot = -Math.PI / 2; // On retourne le van de 180 degrés
+            if (this.type === 2) rot = -Math.PI / 2; // On retourne le van
             ctx.rotate(rot);
             ctx.drawImage(img, -this.h/2, -this.w/2, this.h, this.w);
             ctx.rotate(-rot);
