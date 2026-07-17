@@ -67,10 +67,11 @@ function applyVolumeSettings() {
     radioStations.forEach((r, idx) => { if(gameState === 'playing' && idx === currentRadioIndex) r.audio.volume = targetVol; else r.audio.volume = 0; });
 }
 
+// MISE A JOUR CORRIGÉE DU MEILLEUR SCORE GLOBAL
 function updateMenuBestScore() {
     let best = localStorage.getItem('gofast_best_time');
-    let els = document.querySelectorAll('.best-score-text');
-    els.forEach(el => {
+    let el = document.getElementById('global-best-score');
+    if(el) {
         if(best) {
             let mins = Math.floor(best / 60000).toString().padStart(2, '0');
             let secs = Math.floor((best % 60000) / 1000).toString().padStart(2, '0');
@@ -79,7 +80,7 @@ function updateMenuBestScore() {
         } else {
             el.innerText = `🏆 Best Score: --:--.---`;
         }
-    });
+    }
 }
 
 window.selectCar = function(carType) {
@@ -155,7 +156,7 @@ function showScreen(id) {
         }
     } else if (id === null && gameState === 'playing') { 
         stopBgSlider(); 
-        if(timerDisplay) timerDisplay.style.display = 'block';
+        if(timerDisplay) timerDisplay.style.display = 'flex'; // Modifié en flex pour alignement
     }
 }
 
@@ -185,7 +186,7 @@ function startGame(carType) {
 }
 
 function finishStartGame(carType) {
-    map = new CityMap(carType); // <--- INTEGRATION DU PARAMETRE POUR LA GENERATION DE CARGO
+    map = new CityMap(carType); 
     
     let px = map.bankSpawn.x * map.tileSize + map.tileSize / 2; 
     let py = map.bankSpawn.y * map.tileSize + map.tileSize / 2;
@@ -221,7 +222,7 @@ function finishStartGame(carType) {
     
     showScreen(null); 
     document.getElementById('bottom-hud').style.display = 'flex';
-    document.getElementById('radio-wrapper').style.display = 'block';
+    document.getElementById('radio-wrapper').style.display = 'flex';
     
     currentRadioIndex = Math.floor(Math.random() * radioStations.length);
     if(audioInitialized) {
@@ -656,6 +657,7 @@ function update() {
         }
         let cargoNode = document.getElementById('cargo');
         if (cargoNode) cargoNode.innerText = `CARGO: ${player.keysCollected}/${player.targetCargo}`;
+        
         let wantedNode = document.getElementById('wanted-display');
         if (wantedNode) wantedNode.innerText = wantedLevel > 0 ? `WANTED: ${'★'.repeat(Math.min(5, wantedLevel))}` : `WANTED: CHILL MODE 😎`;
 
