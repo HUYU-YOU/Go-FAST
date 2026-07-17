@@ -9,21 +9,28 @@
     <div id="game-container">
         <div id="bg-slider"></div>
 
-        <div id="global-audio-controls">
-            <button id="mute-btn" onclick="toggleMute()">🔊</button>
-            <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
-        </div>
-
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
         
+        <!-- HUD SUPÉRIEUR (Disposition parfaite) -->
         <div id="top-hud">
-            <div id="minimap-container"></div>
-            <div id="timer-display" style="position: absolute; top: 15px; left: 320px; color: #00ffcc; font-size: 22px; font-weight: bold; background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 5px; border: 1px solid #00ffcc; display: none;">TIME: 00:00.000</div>
-            
-            <div id="radio-wrapper">
-                <span id="radio-display">📻 RADIO: OFF</span>
+            <!-- 1. Volume (Tout à gauche) -->
+            <div id="global-audio-controls" style="position: absolute; pointer-events: auto; top: 15px; left: 15px; z-index: 100; background: rgba(0,0,0,0.8); padding: 5px 10px; border: 1px solid #00ffcc; border-radius: 6px; display: flex; align-items: center; height: 26px;">
+                <button id="mute-btn" onclick="toggleMute()" style="background:none; border:none; color:white; cursor:pointer; font-size:16px;">🔊</button>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
             </div>
-            <div id="wanted-display">WANTED: ★</div>
+
+            <!-- 2. Wanted (Rouge, parfaitement aligné à droite du volume) -->
+            <div id="wanted-display" style="position: absolute; top: 15px; left: 195px; color: #ff3333; font-size: 18px; font-weight: bold; background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 6px; border: 1px solid #ff3333; display: flex; align-items: center; height: 26px; box-shadow: 0 0 10px rgba(255,51,51,0.5);">WANTED: ★</div>
+
+            <!-- 3. Timer (Parfaitement au centre de l'écran) -->
+            <div id="timer-display" style="position: absolute; top: 15px; left: 50%; transform: translateX(-50%); color: #00ffcc; font-size: 20px; font-weight: bold; background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 6px; border: 1px solid #00ffcc; display: none; align-items: center; height: 26px;">TIME: 00:00.000</div>
+            
+            <!-- 4. Radio (Décalée complètement à droite) -->
+            <div id="radio-wrapper" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.9); padding: 5px 15px; border: 1px solid #cc66ff; border-radius: 6px; display: none; font-weight: bold; align-items: center; height: 26px;">
+                <span id="radio-display" style="color: #cc66ff;">📻 RADIO: OFF</span>
+            </div>
+
+            <div id="minimap-container"></div>
         </div>
 
         <div id="bottom-hud">
@@ -33,6 +40,7 @@
             <span id="cargo" style="color:#ffd700;">CARGO: 0/5</span>
         </div>
 
+        <!-- MENU PRINCIPAL -->
         <div id="main-menu" class="screen with-bg">
             <div class="screen-content">
                 <p id="global-best-score" style="color: #ffd700; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px #ffcc00, 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 12px; border: 1px solid #ffd700; display: inline-block;">🏆 Best Score: --:--.---</p>
@@ -45,48 +53,39 @@
         <div id="car-select" class="screen with-bg" style="display: none;">
             <div class="screen-content" style="padding: 10px 0;">
                 
-                <p id="specific-best-score" style="color: #00ffcc; font-size: 20px; font-weight: bold; margin: 0 auto 5px auto; text-shadow: 0 0 8px #00ffcc, 2px 2px 4px #000; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 12px; border: 1px solid #00ffcc; display: inline-block;">⏱️ Record Véhicule: --:--.---</p>
-                
-                <h2 style="font-size: 28px; text-transform: uppercase; text-shadow: 2px 2px 4px black; margin: 5px 0 15px 0;">SELECT YOUR RIDE</h2>
+                <p id="specific-best-score" style="color: #00ffcc; font-size: 20px; font-weight: bold; margin: 0 auto 15px auto; text-shadow: 0 0 8px #00ffcc, 2px 2px 4px #000; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 12px; border: 1px solid #00ffcc; display: inline-block;">⏱️ Record Véhicule: --:--.---</p>
                 
                 <div class="car-roster" style="display: flex; flex-wrap: wrap; justify-content: center; max-width: 900px; gap: 12px; margin: 0 auto 15px auto;">
-                    
                     <div class="car-card" id="card-fer" onclick="selectCar('fer')">
                         <img src="img/FER1.png" class="menu-car-img" alt="Ferrari">
                         <h3 style="color:#ffcc00; margin:0 0 5px 0; font-size:16px;">FERRARI</h3>
                         <p style="margin:0; color:#ddd; font-size:13px;">Hull: 3 HP</p>
                         <p style="margin:2px 0 0 0; color:#ffcc00; font-size:11px; font-weight:bold;">Top Speed</p>
                     </div>
-
-                    <!-- INVERSION EFFECTUÉE ICI -->
                     <div class="car-card" id="card-cab" onclick="selectCar('cab')">
                         <img src="img/CAB1.png" class="menu-car-img" alt="Cabriolet">
                         <h3 style="color:#cc66ff; margin:0 0 5px 0; font-size:16px;">CABRIOLET</h3>
                         <p style="margin:0; color:#ddd; font-size:13px;">Hull: 7 HP</p>
                         <p style="margin:2px 0 0 0; color:#cc66ff; font-size:11px; font-weight:bold;">Armored</p>
                     </div>
-                    
                     <div class="car-card" id="card-gti" onclick="selectCar('gti')">
                         <img src="img/GTI1.png" class="menu-car-img" alt="GTI">
                         <h3 style="color:#ffffff; margin:0 0 5px 0; font-size:16px;">GTI</h3>
                         <p style="margin:0; color:#ddd; font-size:13px;">Hull: 5 HP</p>
                         <p style="margin:2px 0 0 0; color:#aaa; font-size:11px; font-weight:bold;">Balanced</p>
                     </div>
-                    
                     <div class="car-card" id="card-moto" style="display: none;" onclick="selectCar('moto')">
                         <img src="img/moto1.png" class="menu-car-img" style="height: 70px;" alt="Moto">
                         <h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:16px;">YAMAHA</h3>
                         <p style="margin:0; color:#ddd; font-size:13px;">Hull: 4 HP</p>
                         <p style="margin:2px 0 0 0; color:#00ffcc; font-size:11px; font-weight:bold;">+20% Speed</p>
                     </div>
-                    
                     <div class="car-card" id="card-tank_p" style="display: none;" onclick="selectCar('tank_p')">
                         <img src="img/tank1.png" class="menu-car-img" style="height: 100px;" alt="Tank">
                         <h3 style="color:#55ff55; margin:0 0 5px 0; font-size:16px;">HEAVY TANK</h3>
                         <p style="margin:0; color:#ddd; font-size:13px;">Hull: 20 HP</p>
                         <p style="margin:2px 0 0 0; color:#ff3333; font-size:11px; font-weight:bold;">Obj: 10 Cargos</p>
                     </div>
-                    
                 </div>
                 
                 <div style="display: flex; gap: 20px; align-items: center; justify-content: center; margin-top: 5px;">
