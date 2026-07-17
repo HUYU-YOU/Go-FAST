@@ -1,8 +1,4 @@
 const canvas = document.getElementById('gameCanvas');
-canvas.width = 1600; 
-canvas.height = 960;
-canvas.style.width = "1000px"; 
-canvas.style.height = "600px";
 const ctx = canvas.getContext('2d');
 
 let map, player, civilians, police, helicopters, pedestrians, particles, bullets;
@@ -88,9 +84,9 @@ window.selectCar = function(carType) {
     let cards = document.querySelectorAll('.car-card');
     
     cards.forEach(c => {
-        c.style.boxShadow = '0 4px 15px rgba(0,0,0,0.5)';
+        c.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)';
         c.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-        c.style.background = 'rgba(20, 20, 30, 0.65)';
+        c.style.background = 'rgba(255, 255, 255, 0.05)';
         c.style.transform = 'translateY(0) scale(1)';
     });
     
@@ -104,7 +100,7 @@ window.selectCar = function(carType) {
         
         card.style.boxShadow = `0 0 25px ${glowColor}, inset 0 0 15px ${glowColor}`;
         card.style.borderColor = glowColor;
-        card.style.background = 'rgba(40, 40, 60, 0.9)';
+        card.style.background = 'rgba(255, 255, 255, 0.15)';
         card.style.transform = 'translateY(-8px) scale(1.05)';
     }
     
@@ -141,8 +137,13 @@ function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
     document.getElementById('bottom-hud').style.display = 'none'; 
     document.getElementById('radio-wrapper').style.display = 'none';
+    
     let timerDisplay = document.getElementById('timer-display');
     if(timerDisplay) timerDisplay.style.display = 'none';
+    
+    // MASQUE LE WANTED AU MENU
+    let wantedDisplay = document.getElementById('wanted-display');
+    if (wantedDisplay) wantedDisplay.style.display = 'none';
 
     if(id) document.getElementById(id).style.display = 'flex';
     
@@ -156,7 +157,7 @@ function showScreen(id) {
         }
     } else if (id === null && gameState === 'playing') { 
         stopBgSlider(); 
-        if(timerDisplay) timerDisplay.style.display = 'flex'; // Modifié en flex pour alignement
+        if(timerDisplay) timerDisplay.style.display = 'flex';
     }
 }
 
@@ -216,7 +217,7 @@ function finishStartGame(carType) {
     startTime = Date.now(); 
     
     civilians = []; police = []; helicopters = []; pedestrians = []; particles = []; bullets = [];
-    camera = { x: player.x - canvas.width / 2, y: player.y - canvas.height / 2 }; 
+    camera = { x: player.x - 1600 / 2, y: player.y - 960 / 2 }; 
     invulnerabilityTimer = 0; 
     gameState = 'playing';
     
@@ -295,7 +296,7 @@ function triggerWin() {
 
     if (player.carType === 'tank_p') {
         gameState = 'credits';
-        creditsY = canvas.height;
+        creditsY = 960; // Commence en bas de l'écran 1600x960
         radioStations.forEach(r => r.audio.volume = 0);
         menuMusic.play().catch(e=>e);
     } else {
@@ -466,6 +467,17 @@ function update() {
             let ms = (currentTime % 1000).toString().padStart(3, '0');
             timerNode.innerText = `TIME: ${mins}:${secs}.${ms}`;
         }
+
+        // AFFICHAGE DU WANTED EN JEU
+        let wantedNode = document.getElementById('wanted-display');
+        if (wantedNode) {
+            if (wantedLevel > 0) {
+                wantedNode.style.display = 'flex';
+                wantedNode.innerText = `WANTED: ${'★'.repeat(Math.min(5, wantedLevel))}`;
+            } else {
+                wantedNode.style.display = 'none';
+            }
+        }
         
         if(invulnerabilityTimer > 0) invulnerabilityTimer--;
         if(radioCooldown > 0) radioCooldown--;
@@ -494,7 +506,7 @@ function update() {
         }
 
         if (keys.shoot && player.carType === 'tank_p' && player.shootCooldown <= 0) {
-            bullets.push(new Bullet(player.x, player.y, player.angle, 'player'));
+            bullets.push(new Bullet(player.x, player.y, player.angle, 'player_tank')); // MODIF: tag 'player_tank' pour les missiles
             player.shootCooldown = 40; 
         }
 
@@ -504,10 +516,26 @@ function update() {
         for(let p of police) p.updateAI(player, map, bullets); 
         for(let ped of pedestrians) ped.update(map);
         for(let pt of particles) pt.update();
-        for(let b of bullets) b.update();
+        
+        // MODIF: Gère l'update des balles ET dessine de la fumée pour les missiles
+        for(let b of bullets) {
+            b.update();
+            if(b.owner.includes('tank')) {
+                // Petite trainée de feu derrière le missile
+                particles.push(new Particle(b.x, b.y, Math.random() > 0.5 ? '#ff3300' : '#ff9900'));
+            }
+        }
 
-        civilians = civilians.filter(c => Math.abs(c.x - player.x) < 2200 && Math.abs(c.y - player.y) < 2200);
-        police = police.filter(p => !p.dead && Math.abs(p.x - player.x) < 2200 && Math.abs(p.y - player.y) < 2200);
+        // MODIF: Nettoyage et suppression des noyés
+        civilians = civilians.filter(c => {
+            if (c.drowned) { for(let i=0; i<15; i++) particles.push(new Particle(c.x, c.y, '#1a8cff')); return false; }
+            return Math.abs(c.x - player.x) < 2200 && Math.abs(c.y - player.y) < 2200;
+        });
+        police = police.filter(p => {
+            if (p.drowned) { for(let i=0; i<15; i++) particles.push(new Particle(p.x, p.y, '#1a8cff')); return false; }
+            return !p.dead && Math.abs(p.x - player.x) < 2200 && Math.abs(p.y - player.y) < 2200;
+        });
+        
         pedestrians = pedestrians.filter(p => p.alive && Math.abs(p.x - player.x) < 1800);
         particles = particles.filter(p => p.life > 0);
         bullets = bullets.filter(b => b.life > 0);
@@ -549,7 +577,7 @@ function update() {
 
         for(let b of bullets) {
             if (b.life <= 0) continue;
-            if (b.owner === 'player') {
+            if (b.owner.startsWith('player')) {
                 let hit = false;
                 for (let c of civilians) {
                     if (!c.dead && rectIntersect(c.getBounds(), b.getBounds())) {
@@ -636,7 +664,8 @@ function update() {
             triggerWin();
         }
 
-        camera.x = player.x - canvas.width / 2; camera.y = player.y - canvas.height / 2;
+        // Camera center is half of true canvas dimensions
+        camera.x = player.x - 1600 / 2; camera.y = player.y - 960 / 2;
 
         let healthNode = document.getElementById('health');
         if (healthNode) healthNode.innerText = `HULL: ${player.health}/${player.maxHealth}`;
@@ -645,10 +674,10 @@ function update() {
         let nitroNode = document.getElementById('nitro');
         if (nitroNode) {
             if(player.carType === 'tank_p') {
-                nitroNode.innerText = `SHOOT: [LEFT CLICK]`;
+                nitroNode.innerText = `SHOOT: [CLIC GAUCHE]`;
                 nitroNode.style.color = '#ffcc00';
             } else if(player.nitroUnlocked) {
-                nitroNode.innerText = `NITRO: ${Math.ceil(player.nitro)}% [LEFT CLICK]`;
+                nitroNode.innerText = `NITRO: ${Math.ceil(player.nitro)}% [CLIC GAUCHE]`;
                 nitroNode.style.color = '#00e5ff';
             } else {
                 nitroNode.innerText = `NITRO: LOCKED`;
@@ -657,9 +686,6 @@ function update() {
         }
         let cargoNode = document.getElementById('cargo');
         if (cargoNode) cargoNode.innerText = `CARGO: ${player.keysCollected}/${player.targetCargo}`;
-        
-        let wantedNode = document.getElementById('wanted-display');
-        if (wantedNode) wantedNode.innerText = wantedLevel > 0 ? `WANTED: ${'★'.repeat(Math.min(5, wantedLevel))}` : `NOT WANTED`;
 
     } catch (e) { console.error("Erreur Update: ", e); }
 }
@@ -667,7 +693,7 @@ function update() {
 function draw() {
     try {
         if(gameState === 'playing') {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            ctx.clearRect(0, 0, 1600, 960); 
             map.draw(ctx, camera.x, camera.y);
             for(let pt of particles) pt.draw(ctx, camera.x, camera.y);
             for(let ped of pedestrians) ped.draw(ctx, camera.x, camera.y);
@@ -684,17 +710,17 @@ function draw() {
         }
         else if(gameState === 'credits') {
             ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, 1600, 960);
             
             ctx.fillStyle = '#00ffcc';
             ctx.font = 'bold 40px Courier';
             ctx.textAlign = 'center';
-            ctx.fillText("Bien joue, t'es un vrai bandit", canvas.width/2, 80);
+            ctx.fillText("Bien joue, t'es un vrai bandit", 1600/2, 80);
             
             ctx.fillStyle = 'white';
             ctx.font = '30px Courier';
             for(let i=0; i<creditsText.length; i++) {
-                ctx.fillText(creditsText[i], canvas.width/2, creditsY + i*50);
+                ctx.fillText(creditsText[i], 1600/2, creditsY + i*50);
             }
             creditsY -= 1.5; 
         }
