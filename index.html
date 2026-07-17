@@ -4,6 +4,42 @@
     <meta charset="UTF-8">
     <title>GoFast - Ultimate Edition</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* CSS DÉDIÉ AU HUD POUR ZÉRO CHEVAUCHEMENT */
+        #hud-top-bar {
+            position: absolute;
+            top: 15px; left: 15px; right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none; /* Laisse les clics passer vers le jeu */
+            z-index: 100;
+        }
+        .hud-box {
+            background: rgba(0,0,0,0.85);
+            padding: 5px 15px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            height: 26px;
+            font-weight: bold;
+            pointer-events: auto; /* Permet de cliquer sur le volume */
+        }
+        #hud-left-group { display: flex; gap: 15px; }
+        
+        #global-audio-controls { border: 1px solid #00ffcc; padding: 5px 10px; }
+        #wanted-display { border: 1px solid #ff3333; color: #ff3333; box-shadow: 0 0 10px rgba(255,51,51,0.5); font-size: 18px; }
+        
+        /* Centrage absolu du timer */
+        #timer-display {
+            border: 1px solid #00ffcc; color: #00ffcc; font-size: 20px;
+            position: absolute; left: 50%; transform: translateX(-50%);
+            display: none;
+        }
+        
+        #radio-wrapper { border: 1px solid #cc66ff; display: none; }
+        #radio-display { color: #cc66ff; }
+    </style>
 </head>
 <body>
     <div id="game-container">
@@ -11,23 +47,25 @@
 
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
         
-        <!-- HUD SUPÉRIEUR (Disposition parfaite) -->
+        <!-- HUD SUPÉRIEUR (Système Flexbox Propre) -->
         <div id="top-hud">
-            <!-- 1. Volume (Tout à gauche) -->
-            <div id="global-audio-controls" style="position: absolute; pointer-events: auto; top: 15px; left: 15px; z-index: 100; background: rgba(0,0,0,0.8); padding: 5px 10px; border: 1px solid #00ffcc; border-radius: 6px; display: flex; align-items: center; height: 26px;">
-                <button id="mute-btn" onclick="toggleMute()" style="background:none; border:none; color:white; cursor:pointer; font-size:16px;">🔊</button>
-                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
-            </div>
+            <div id="hud-top-bar">
+                <!-- Gauche : Volume + Wanted -->
+                <div id="hud-left-group">
+                    <div id="global-audio-controls" class="hud-box">
+                        <button id="mute-btn" onclick="toggleMute()" style="background:none; border:none; color:white; cursor:pointer; font-size:16px;">🔊</button>
+                        <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
+                    </div>
+                    <div id="wanted-display" class="hud-box">WANTED: ★</div>
+                </div>
 
-            <!-- 2. Wanted (Rouge, parfaitement aligné à droite du volume) -->
-            <div id="wanted-display" style="position: absolute; top: 15px; left: 195px; color: #ff3333; font-size: 18px; font-weight: bold; background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 6px; border: 1px solid #ff3333; display: flex; align-items: center; height: 26px; box-shadow: 0 0 10px rgba(255,51,51,0.5);">WANTED: ★</div>
+                <!-- Centre : Timer -->
+                <div id="timer-display" class="hud-box">TIME: 00:00.000</div>
 
-            <!-- 3. Timer (Parfaitement au centre de l'écran) -->
-            <div id="timer-display" style="position: absolute; top: 15px; left: 50%; transform: translateX(-50%); color: #00ffcc; font-size: 20px; font-weight: bold; background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 6px; border: 1px solid #00ffcc; display: none; align-items: center; height: 26px;">TIME: 00:00.000</div>
-            
-            <!-- 4. Radio (Décalée complètement à droite) -->
-            <div id="radio-wrapper" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.9); padding: 5px 15px; border: 1px solid #cc66ff; border-radius: 6px; display: none; font-weight: bold; align-items: center; height: 26px;">
-                <span id="radio-display" style="color: #cc66ff;">📻 RADIO: OFF</span>
+                <!-- Droite : Radio -->
+                <div id="radio-wrapper" class="hud-box">
+                    <span id="radio-display">📻 RADIO: OFF</span>
+                </div>
             </div>
 
             <div id="minimap-container"></div>
