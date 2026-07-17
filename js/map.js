@@ -65,11 +65,11 @@ class CityMap {
     }
 
     draw(ctx, camX, camY) {
-        ctx.fillStyle = '#111'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#111'; ctx.fillRect(0, 0, 1600, 960);
         let startCol = Math.max(0, Math.floor(camX / this.tileSize));
-        let endCol = Math.min(this.cols, Math.ceil((camX + canvas.width) / this.tileSize));
+        let endCol = Math.min(this.cols, Math.ceil((camX + 1600) / this.tileSize));
         let startRow = Math.max(0, Math.floor(camY / this.tileSize));
-        let endRow = Math.min(this.rows, Math.ceil((camY + canvas.height) / this.tileSize));
+        let endRow = Math.min(this.rows, Math.ceil((camY + 960) / this.tileSize));
 
         for (let y = startRow; y < endRow; y++) {
             for (let x = startCol; x < endCol; x++) {
@@ -121,6 +121,7 @@ class CityMap {
                     let isV = (x % 3 === 0);
                     let isH = (y % 3 === 0);
 
+                    // MODIF RENDU : On dessine le fond sombre d'abord pour éviter la transparence
                     ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
 
                     if (isV && isH) {
@@ -169,19 +170,19 @@ class CityMap {
         }
         
         for(let k of this.keys) {
-            if(!k.collected && k.x > camX && k.x < camX+canvas.width && k.y > camY && k.y < camY+canvas.height) {
+            if(!k.collected && k.x > camX && k.x < camX+1600 && k.y > camY && k.y < camY+960) {
                 ctx.fillStyle = '#ffd700'; ctx.fillRect(k.x - camX - k.w/2, k.y - camY - k.h/2, k.w, k.h);
                 ctx.fillStyle = '#000'; ctx.font = '16px Courier'; ctx.fillText('K', k.x - camX - 5, k.y - camY + 5);
             }
         }
         for(let f of this.fuels) {
-            if(!f.collected && f.x > camX && f.x < camX+canvas.width && f.y > camY && f.y < camY+canvas.height) {
+            if(!f.collected && f.x > camX && f.x < camX+1600 && f.y > camY && f.y < camY+960) {
                 ctx.fillStyle = '#ff5500'; ctx.fillRect(f.x - camX - f.w/2, f.y - camY - f.h/2, f.w, f.h);
                 ctx.fillStyle = 'white'; ctx.font = '12px Courier'; ctx.fillText('F', f.x - camX - 4, f.y - camY + 4);
             }
         }
         for(let w of this.wrenches) {
-            if(!w.collected && w.x > camX && w.x < camX+canvas.width && w.y > camY && w.y < camY+canvas.height) {
+            if(!w.collected && w.x > camX && w.x < camX+1600 && w.y > camY && w.y < camY+960) {
                 ctx.fillStyle = '#00ffcc'; ctx.fillRect(w.x - camX - w.w/2, w.y - camY - w.h/2, w.w, w.h);
                 ctx.fillStyle = 'black'; ctx.font = '16px Courier'; ctx.fillText('🔧', w.x - camX - 8, w.y - camY + 6);
             }
