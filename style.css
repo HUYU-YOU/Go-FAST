@@ -1,47 +1,110 @@
-body { margin: 0; background: #000; color: white; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-#game-container { position: relative; width: 1000px; height: 600px; border: 2px solid #222; overflow: hidden; }
-#bg-slider { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background-size: cover; background-position: center; transition: background-image 1.5s ease-in-out; }
-canvas { position: relative; z-index: 2; background-color: transparent; }
+body {
+    margin: 0; background: #0b0b0f; color: white;
+    font-family: 'Courier New', monospace;
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh; overflow: hidden;
+}
+#game-container {
+    position: relative; width: 1000px; height: 600px;
+    border: 2px solid #222; overflow: hidden;
+    box-shadow: 0 0 50px rgba(0,255,204,0.1);
+    border-radius: 12px;
+}
+#bg-slider {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+    background-size: cover; background-position: center; transition: background-image 1.5s ease-in-out;
+}
+canvas {
+    position: absolute; z-index: 2; top: 0; left: 0;
+    width: 1000px !important; height: 600px !important; /* Force resize HTML to CSS */
+}
 
-/* Le HUD du haut est géré directement dans index.html pour les alignements précis */
+/* --- HUD SECURE --- */
 #top-hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+#hud-top-bar { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
+#hud-left-group { display: flex; gap: 15px; }
 
-#bottom-hud { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 8px; display: none; z-index: 5; font-weight: bold; width: 90%; justify-content: space-between; align-items: center;}
+.glass-hud {
+    background: rgba(10, 10, 15, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 5px 15px; border-radius: 6px;
+    display: flex; align-items: center; height: 26px; font-weight: bold; pointer-events: auto;
+}
+#timer-display { position: absolute; left: 50%; transform: translateX(-50%); font-size: 20px; }
 
-/* SUPPRESSION DU FLOU (backdrop-filter) SUR LES ECRANS DE MENU */
-.screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
-.screen-content { text-align: center; width: 100%; }
+#bottom-hud {
+    position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+    width: 85%; justify-content: space-between; display: none; z-index: 5;
+    padding: 12px 25px;
+}
+.hud-stat { font-size: 16px; text-shadow: 1px 1px 2px #000; }
 
-#loading-bar-bg { width: 400px; height: 25px; border: 2px solid #00ffcc; background: black; border-radius: 12px; overflow: hidden; margin: 0 auto;}
-#loading-bar { width: 0%; height: 100%; background: #00ffcc; transition: width 0.2s; }
+/* --- MENUS GLASSMORPHISM --- */
+.screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10;
+    background: transparent;
+    backdrop-filter: blur(12px); /* Effet vitré flouté pro */
+    -webkit-backdrop-filter: blur(12px);
+}
+.screen-content { text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center; }
 
+.glass-panel {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 10px 20px; border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* TYPO & NEONS */
+.main-title { font-size: 70px; margin: 0 0 10px 0; text-shadow: 0 0 20px #00ffcc; }
+.subtitle { font-size: 16px; color: #ccc; margin-bottom: 30px; text-shadow: 1px 1px 2px #000; }
+.neon-cyan-text { color: #00ffcc; text-shadow: 0 0 8px #00ffcc; }
+.neon-gold-text { color: #ffd700; text-shadow: 0 0 8px #ffd700; }
+.neon-purple-text { color: #cc66ff; text-shadow: 0 0 8px #cc66ff; }
+.neon-white-text { color: #ffffff; text-shadow: 0 0 8px #ffffff; }
+.neon-green-text { color: #55ff55; text-shadow: 0 0 8px #55ff55; }
+.neon-orange-text { color: #ff5500; text-shadow: 0 0 8px #ff5500; }
+.neon-gray-text { color: #888; }
+.neon-cyan { border-color: #00ffcc; color: #00ffcc; box-shadow: 0 0 10px rgba(0,255,204,0.3); }
+.neon-red { border-color: #ff3333; color: #ff3333; box-shadow: 0 0 10px rgba(255,51,51,0.5); }
+.neon-purple { border-color: #cc66ff; color: #cc66ff; box-shadow: 0 0 10px rgba(204,102,255,0.3); }
+
+/* BOUTONS */
+button { transition: 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); cursor: pointer; }
+.btn-primary {
+    padding: 12px 40px; font-size: 24px; border-radius: 30px;
+    background: #00ffcc; color: #000; font-weight: bold; border: none;
+    box-shadow: 0 0 15px rgba(0,255,204,0.6);
+}
+.btn-primary:hover { transform: scale(1.08); box-shadow: 0 0 25px #00ffcc; }
+.btn-secondary {
+    padding: 10px 25px; font-size: 16px; border-radius: 20px;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); color: #fff;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+.action-buttons { display: flex; gap: 20px; margin-top: 15px; }
+
+/* VEHICLES CARDS */
+.car-roster { display: flex; flex-wrap: wrap; justify-content: center; max-width: 900px; gap: 15px; margin: 15px auto; }
 .car-card {
-    background: rgba(20, 20, 30, 0.65);
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    border-radius: 16px;
-    padding: 15px;
-    cursor: pointer;
-    width: 140px;
-    height: 190px;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    background: rgba(255, 255, 255, 0.05); /* Transparent Glass */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px; padding: 15px; width: 140px; height: 180px;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
 }
-.car-card:hover {
-    background: rgba(40, 40, 60, 0.85);
-    transform: translateY(-5px);
-    border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.7);
-}
-.menu-car-img {
-    max-width: 95%;
-    max-height: 100px;
-    object-fit: contain;
-    filter: drop-shadow(0px 8px 6px rgba(0,0,0,0.7));
-    margin-bottom: auto; 
-}
-button { transition: 0.2s ease; }
-button:hover { transform: scale(1.05); }
+.car-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); }
+.menu-car-img { max-width: 95%; max-height: 90px; object-fit: contain; filter: drop-shadow(0 8px 6px rgba(0,0,0,0.5)); margin-bottom: auto; }
+.car-card h3 { margin: 0 0 5px 0; font-size: 16px; }
+.car-desc { margin: 0; color: #ddd; font-size: 12px; line-height: 1.4; }
+
+/* MUTE BTN */
+#mute-btn { background: none; border: none; color: white; cursor: pointer; font-size: 16px; margin-right: 5px;}
+
+/* LOADER */
+#loading-bar-bg { width: 400px; height: 25px; border: 2px solid #00ffcc; background: rgba(0,0,0,0.5); border-radius: 12px; overflow: hidden; margin: 20px auto 0 auto; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
+#loading-bar { width: 0%; height: 100%; background: #00ffcc; box-shadow: 0 0 15px #00ffcc; transition: width 0.2s; }
