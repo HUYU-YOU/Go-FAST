@@ -517,12 +517,10 @@ function update() {
         for(let b of bullets) {
             b.update();
             if(b.owner.includes('tank')) {
-                // TRAINEE DE FUMEE MISSILE
                 particles.push(new Particle(b.x, b.y, Math.random() > 0.5 ? '#ff3300' : '#ff9900'));
             }
         }
 
-        // SUPPRESSION DES IA NOYEES
         civilians = civilians.filter(c => {
             if (c.drowned) { for(let i=0; i<30; i++) particles.push(new Particle(c.x, c.y, '#1a8cff')); return false; }
             return Math.abs(c.x - player.x) < 2200 && Math.abs(c.y - player.y) < 2200;
@@ -687,7 +685,6 @@ function update() {
 
 function draw() {
     try {
-        // VIDAGE DU CANVAS POUR AFFICHER LES BACKGROUNDS DES MENUS PROPREMENT
         ctx.clearRect(0, 0, 1600, 960); 
 
         if(gameState === 'playing') {
@@ -712,7 +709,8 @@ function draw() {
             ctx.fillStyle = '#00ffcc';
             ctx.font = 'bold 40px Courier';
             ctx.textAlign = 'center';
-            ctx.fillText("Bien joue, t'es un vrai bandit", 1600/2, 80);
+            // TEXTE BAISSÉ ICI (Y = 180 au lieu de 80)
+            ctx.fillText("Bien joue, t'es un vrai bandit", 1600/2, 180);
             
             ctx.fillStyle = 'white';
             ctx.font = '30px Courier';
