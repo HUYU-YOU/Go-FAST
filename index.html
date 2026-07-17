@@ -9,7 +9,7 @@
     <div id="game-container">
         <div id="bg-slider"></div>
         
-        <canvas id="gameCanvas" width="1600" height="960"></canvas>
+        <canvas id="gameCanvas" width="1600" height="960" style="width: 1000px; height: 600px;"></canvas>
         
         <!-- HUD SUPÉRIEUR -->
         <div id="top-hud">
@@ -19,7 +19,6 @@
                         <button id="mute-btn" onclick="toggleMute()">🔊</button>
                         <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
                     </div>
-                    <!-- Corrigé: Affichage dynamique en jeu -->
                     <div id="wanted-display" class="hud-box glass-hud neon-red" style="display: none;">WANTED: ★</div>
                 </div>
 
@@ -45,7 +44,7 @@
             <div class="screen-content">
                 <p id="global-best-score" class="glass-panel neon-gold-text">🏆 Best Score: --:--.---</p>
                 <h1 class="main-title neon-cyan-text">GO-FAST</h1>
-                <p class="subtitle">Visée Souris | Clic Gauche = Accélérer/Tirer | Clic Droit = Freiner</p>
+                <p class="subtitle">Visée Souris | Clic Gauche = Accélérer/Tirer | Clic Droit = Freiner | Touches WASD/ZQSD</p>
                 <button id="play-btn" class="btn-primary" onclick="showScreen('car-select')">PLAY</button>
             </div>
         </div>
@@ -103,7 +102,7 @@
             <div class="screen-content glass-panel">
                 <h1 id="msg-title"></h1>
                 <p id="msg-sub"></p>
-                <button class="btn-primary" onclick="location.reload()">MAIN MENU</button>
+                <button class="btn-primary" onclick="location.reload()" style="margin-top: 20px;">MAIN MENU</button>
             </div>
         </div>
     </div>
