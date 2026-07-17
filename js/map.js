@@ -1,6 +1,6 @@
 class CityMap {
     constructor(carType) {
-        this.carType = carType || 'gti'; // La map sait maintenant quelle voiture est jouée
+        this.carType = carType || 'gti'; 
         this.tileSize = 250; 
         this.cols = 40;     
         this.rows = 40;     
@@ -40,7 +40,6 @@ class CityMap {
     }
 
     placeInteractables() {
-        // GESTION DYNAMIQUE DES CARGOS : 11 pour le Tank, 8 pour les autres
         let nbCargos = (this.carType === 'tank_p') ? 11 : 8;
         
         for(let i=0; i<nbCargos; i++) {
@@ -121,7 +120,6 @@ class CityMap {
                     let isV = (x % 3 === 0);
                     let isH = (y % 3 === 0);
 
-                    // MODIF RENDU : On dessine le fond sombre d'abord pour éviter la transparence
                     ctx.fillStyle = '#36363d'; ctx.fillRect(px, py, this.tileSize, this.tileSize);
 
                     if (isV && isH) {
