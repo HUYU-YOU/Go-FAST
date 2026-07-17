@@ -709,7 +709,6 @@ function draw() {
             ctx.fillStyle = '#00ffcc';
             ctx.font = 'bold 40px Courier';
             ctx.textAlign = 'center';
-            // TEXTE BAISSÉ ICI (Y = 180 au lieu de 80)
             ctx.fillText("Bien joue, t'es un vrai bandit", 1600/2, 180);
             
             ctx.fillStyle = 'white';
