@@ -56,7 +56,7 @@
                         <button id="mute-btn" onclick="toggleMute()" style="background:none; border:none; color:white; cursor:pointer; font-size:16px;">🔊</button>
                         <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
                     </div>
-                    <!-- AJOUT DE display:none ICI -->
+                    <!-- Le WANTED est caché par défaut dans le menu avec display: none -->
                     <div id="wanted-display" class="hud-box" style="display: none;">WANTED: ★</div>
                 </div>
 
@@ -151,6 +151,7 @@
         </div>
     </div>
 
+    <!-- C'est ici que la magie opère en liant tes vrais fichiers -->
     <script src="js/input.js"></script>
     <script src="js/entities.js"></script>
     <script src="js/map.js"></script>
