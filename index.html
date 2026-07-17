@@ -15,18 +15,23 @@
         <!-- HUD SUPÉRIEUR -->
         <div id="top-hud">
             <div id="hud-top-bar">
+                <!-- Gauche : Audio -->
                 <div id="hud-left-group">
                     <div id="global-audio-controls" class="hud-box glass-hud">
                         <button id="mute-btn" onclick="toggleMute()">🔊</button>
                         <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
                     </div>
-                    <div id="wanted-display" class="hud-box glass-hud neon-red" style="display: none;">WANTED: ★</div>
                 </div>
 
+                <!-- Centre : Chrono -->
                 <div id="timer-display" class="hud-box glass-hud neon-cyan" style="display: none;">TIME: 00:00.000</div>
 
-                <div id="radio-wrapper" class="hud-box glass-hud neon-purple" style="display: none;">
-                    <span id="radio-display">📻 RADIO: OFF [ENTER]</span>
+                <!-- Droite : Radio + Wanted -->
+                <div id="hud-right-group">
+                    <div id="radio-wrapper" class="hud-box glass-hud neon-purple" style="display: none;">
+                        <span id="radio-display">📻 RADIO: OFF [ENTER]</span>
+                    </div>
+                    <div id="wanted-display" class="hud-box glass-hud neon-red" style="display: none;">WANTED: ★</div>
                 </div>
             </div>
             <div id="minimap-container"></div>
