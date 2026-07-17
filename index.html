@@ -56,7 +56,8 @@
                         <button id="mute-btn" onclick="toggleMute()" style="background:none; border:none; color:white; cursor:pointer; font-size:16px;">🔊</button>
                         <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeGlobalVolume(this.value)">
                     </div>
-                    <div id="wanted-display" class="hud-box">WANTED: ★</div>
+                    <!-- AJOUT DE display:none ICI -->
+                    <div id="wanted-display" class="hud-box" style="display: none;">WANTED: ★</div>
                 </div>
 
                 <!-- Centre : Timer -->
@@ -103,13 +104,13 @@
                     <div class="car-card" id="card-cab" onclick="selectCar('cab')">
                         <img src="img/CAB1.png" class="menu-car-img" alt="Cabriolet">
                         <h3 style="color:#cc66ff; margin:0 0 5px 0; font-size:16px;">CABRIOLET</h3>
-                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 7 HP</p>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 5 HP</p>
                         <p style="margin:2px 0 0 0; color:#cc66ff; font-size:11px; font-weight:bold;">Armored</p>
                     </div>
                     <div class="car-card" id="card-gti" onclick="selectCar('gti')">
                         <img src="img/GTI1.png" class="menu-car-img" alt="GTI">
                         <h3 style="color:#ffffff; margin:0 0 5px 0; font-size:16px;">GTI</h3>
-                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 5 HP</p>
+                        <p style="margin:0; color:#ddd; font-size:13px;">Hull: 7 HP</p>
                         <p style="margin:2px 0 0 0; color:#aaa; font-size:11px; font-weight:bold;">Balanced</p>
                     </div>
                     <div class="car-card" id="card-moto" style="display: none;" onclick="selectCar('moto')">
